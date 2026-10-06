@@ -102,7 +102,8 @@ export function renderReport(report){
  const worst=ranked.find(r=>r.d.verdict.label==='Avoid');
  o.push(`- Verdict count: ${counts('Hire')} Hire, ${counts('Negotiate')} Negotiate, ${counts('Avoid')} Avoid, ${unrated.length} not rated.${worst?` Example: @${worst.k.handle}: ${worst.d.verdict.reason}.`:''}`);
  const b=decision.budget;
- if(b)o.push(`- Of ${usd(b.total)}, ${usd(b.allocated)} is allocated and ${usd(b.unallocated)} is unallocated, because spend per KOL is capped at its fair price.`);
+ if(b&&b.allocated===0)o.push(`- Of ${usd(b.total)}, nothing is allocated: no KOL reached Hire or Negotiate with a verifiable fair price.`);
+ else if(b)o.push(`- Of ${usd(b.total)}, ${usd(b.allocated)} is allocated and ${usd(b.unallocated)} is unallocated, because spend per KOL is capped at its fair price.`);
  else{const sum=ranked.filter(r=>r.d.fair&&['Hire','Negotiate'].includes(r.d.verdict.label)).reduce((n,r)=>n+r.d.fair.usd,0);o.push(`- No budget was given. Fair prices for the Hire and Negotiate KOLs total ${usd(sum)}.`);}
  o.push('','## KOL details','');
  let rank=0;
