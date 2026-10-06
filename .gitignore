@@ -30,3 +30,4 @@ docs/
 *.md
 !README.md
 !agent/instructions.md
+!chat-agent/agent/instructions.md
