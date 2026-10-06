@@ -8,10 +8,12 @@ import {createDefiLlama} from './defillama.mjs';
 import {detectPromos,postUrl} from './promo.mjs';
 import {postStats,replyQuality} from './analysis.mjs';
 import {priceOutcomes} from './prices.mjs';
+import {priceWithPriceProof} from './priceproof-integration.mjs';
 import {decide,mergeConstraints} from './decide.mjs';
 import {renderReport} from './report.mjs';
 import {saveReport,loadReport} from './store.mjs';
-import {cacheDir} from './config.mjs';
+import {cacheDir,repoRoot} from './config.mjs';
+import {join} from 'node:path';
 const DAY_MS=86400000;
 export function cleanHandles(raw){
  const seen=new Set(),valid=[],invalid=[];
@@ -66,11 +68,11 @@ async function collectKol(handle,{x,now,deadline}){
  if(kol.replies.status!=='ok')kol.couldNotVerify.push(`reply quality: ${kol.replies.reason}. Estimated real views are not adjusted for bot share`);
  return kol;
 }
-export function createDeps({env=process.env,fetchImpl=fetch,now=Date.now(),sleep,cache:sharedCache}={}){
+export function createDeps({env=process.env,fetchImpl=fetch,now=Date.now(),sleep,cache:sharedCache,priceProof}={}){
  const mock=isMock(env),cap=limits(env);
  const cache=sharedCache??createCache({dir:mock?undefined:cacheDir(env)});
  const xBudget=createBudget({max:cap.maxXCalls,label:'X API'}),cgBudget=createBudget({max:cap.maxCoinGeckoCalls,label:'CoinGecko'});
- return {mock,now,cache,limits:cap,
+ return {mock,now,cache,limits:cap,priceProof:priceProof??priceProofFromEnv(env,fetchImpl),
   x:createXClient({bearer:env.X_BEARER_TOKEN,fetchImpl,cache,budget:xBudget,sleep,maxCostUsd:cap.maxXCostUsd,ttlMs:ttlFromEnv(env),liveAllowed:env.X_LIVE_ALLOWED!=='false'}),
   cg:createCoinGecko({apiKey:env.COINGECKO_API_KEY,fetchImpl,cache,budget:cgBudget,ratePerMin:cap.coingeckoRatePerMin,sleep}),
   llama:createDefiLlama({fetchImpl,cache,sleep})};
@@ -83,7 +85,10 @@ export async function vetKols(params,{deps,dir,sessionId=null}={}){
  const kols=await pool(valid,cap.concurrency,h=>collectKol(h,{x,now,deadline}));
  for(const bad of invalid)kols.push({handle:bad,status:'invalid',profile:null,posts:null,replies:null,promos:[],couldNotVerify:[]});
  const refs=kols.filter(k=>k.status==='ok').flatMap(k=>k.promos.map(promo=>({handle:k.handle,promo})));
- const outcomes=Date.now()>deadline?new Map():await priceOutcomes(refs,{cg,llama,now});
+ let outcomes,priceProof=null;
+ if(Date.now()>deadline)outcomes=new Map();
+ else if(deps.priceProof){const r=await priceWithPriceProof(refs,{cg,llama,now,pp:deps.priceProof,deadline});outcomes=r.outcomes;priceProof=r.info}
+ else outcomes=await priceOutcomes(refs,{cg,llama,now});
  for(const k of kols)for(const p of k.promos){
   const o=outcomes.get(`${k.handle}|${p.key}`)??{status:'unverified',reason:'time budget for this report was used up'};
   p.outcome=o;p.coin=o.coin??null;
@@ -93,13 +98,14 @@ export async function vetKols(params,{deps,dir,sessionId=null}={}){
  const notes=[];
  if(invalid.length)notes.push(`Ignored ${invalid.length} input(s) that are not valid X handles.`);
  if(dropped)notes.push(`Only the first ${RULES.maxHandles} handles were analysed; ${dropped} more were dropped.`);
- return finish({kols,constraints,notes,params:{handles:valid,invalid,dropped},mock,now,parentId:null,deps,dir,sessionId,usage:{xCalls:x.budget.used,coinGeckoCalls:cg.budget.used,xUsersRead:x.stats.users,xPostsRead:x.stats.posts,estXCostUsd:Math.round((x.stats.users*0.01+x.stats.posts*0.005)*100)/100}});
+ return finish({kols,constraints,notes,params:{handles:valid,invalid,dropped},mock,now,parentId:null,priceProof,deps,dir,sessionId,usage:{xCalls:x.budget.used,coinGeckoCalls:cg.budget.used,xUsersRead:x.stats.users,xPostsRead:x.stats.posts,estXCostUsd:Math.round((x.stats.users*0.01+x.stats.posts*0.005)*100)/100}});
 }
-function finish({kols,constraints,notes,params,mock,now,parentId,dir,sessionId,usage}){
+function finish({kols,constraints,notes,params,mock,now,parentId,dir,sessionId,usage,priceProof}){
  const decision=decide(kols,constraints);
  const id=`rpt_${randomBytes(6).toString('hex')}`;
  const createdAt=new Date().toISOString();
  const report={id,createdAt,parentId,sessionId,mock,asOf:new Date(now).toISOString(),params,constraints,notes,usage,analyses:kols,decision};
+ if(priceProof)report.priceProof=priceProof;
  report.markdown=renderReport(report);
  saveReport(dir,report);
  return report;
@@ -110,7 +116,7 @@ export function rerankReport({reportId,update,dir,sessionId=null}){
  if(!prior)throw new Error('Report not found');
  const constraints=mergeConstraints(prior.constraints,update);
  const notes=[`Re-ranked from report ${prior.id} using stored data; no new X or CoinGecko reads.`,...prior.notes.filter(n=>!n.startsWith('Re-ranked from'))];
- return finish({kols:prior.analyses,constraints,notes,params:prior.params,mock:prior.mock,now:Date.parse(prior.asOf),parentId:prior.id,dir,sessionId,usage:{xCalls:0,coinGeckoCalls:0}});
+ return finish({kols:prior.analyses,constraints,notes,params:prior.params,mock:prior.mock,now:Date.parse(prior.asOf),parentId:prior.id,dir,sessionId,usage:{xCalls:0,coinGeckoCalls:0},priceProof:prior.priceProof});
 }
 // Compact numeric summary for the model. Never includes post text or profile bios.
 export function summarize(report){
@@ -121,4 +127,18 @@ export function summarize(report){
   excluded:d.excluded,budget:d.budget?{total_usd:d.budget.total,allocated_usd:d.budget.allocated,unallocated_usd:d.budget.unallocated}:null,
   could_not_verify_items:report.analyses.reduce((n,k)=>n+k.couldNotVerify.length+(k.status==='ok'?0:1),0),
   constraints:{region:report.constraints.region??null,max_fee_usd:report.constraints.max_fee_usd??null,exclude_handles:report.constraints.exclude_handles,cpm_usd:d.cpm}};
+}
+
+// PriceProof is off unless PRICEPROOF_ENABLED=true; when off, nothing here runs and behaviour is identical to v1.
+export function priceProofFromEnv(env,fetchImpl=fetch){
+ if(env.PRICEPROOF_ENABLED!=='true')return null;
+ const token=env.PRICEPROOF_PURCHASE_TOKEN;
+ if(!token||!env.PRICEPROOF_AGENT_IDENTIFIER)return null;
+ const mps=async(path,body)=>{
+  const response=await fetchImpl(`${env.MPS_URL}/api/v1${path}`,{method:body?'POST':'GET',redirect:'error',headers:{token,'content-type':'application/json'},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(30000)});
+  const data=await response.json();
+  if(!response.ok)throw new Error(`Payment service HTTP ${response.status}`);
+  return data.data;
+ };
+ return {config:{url:env.PRICEPROOF_URL||'http://127.0.0.1:21960',agentIdentifier:env.PRICEPROOF_AGENT_IDENTIFIER,maxPriceAtomic:env.PRICEPROOF_MAX_PRICE_ATOMIC||'500000',timeoutMs:Number(env.PRICEPROOF_TIMEOUT_MS)||360000,journalDir:join(repoRoot,'.local','priceproof-purchases')},deps:{mps,fetchImpl}};
 }

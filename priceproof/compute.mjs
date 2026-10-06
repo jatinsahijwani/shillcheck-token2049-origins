@@ -31,6 +31,7 @@ export function parseLookups(text){
 export function validate(data){try{parseLookups(data.lookups);return null}catch(e){return e.message}}
 const sourcesFor=(lookup,outcome)=>{
  const out=[];
+ if(outcome.status!=='ok'&&outcome.status!=='pending')return out;
  if(outcome.coin?.id)out.push(coinUrl(outcome.coin.id),`${coinUrl(outcome.coin.id)}/historical_data`);
  if(outcome.source==='defillama'){
   const ts=Math.floor(Date.parse(lookup.date)/1000);
