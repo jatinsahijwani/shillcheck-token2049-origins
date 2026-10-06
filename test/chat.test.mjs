@@ -55,7 +55,8 @@ test('quick check: Avoid, not found, invalid, and uncached handles never spend w
   assert.equal(f.calls.filter(u=>u.includes('api.x.com')).length,f.calls.slice(0,before).filter(u=>u.includes('api.x.com')).length,'no new X call on a miss');
   assert.equal(cold.status,'error');assert.equal(cold.reason_code,'not_cached');
   assert.match(expandChatMarkers(`[[SHILLCHECK_QUICK:${cold.quick_id}]]`,{dir:join(root,'reports')}),/not in my cache and live X reads are off/);
-  assert.equal((await quickCheck({handle:'not a handle!!'},'s',{env:envFor(root),fetchImpl:f,now:NOW})).status,'invalid');
+  const bad=await quickCheck({handle:'not a handle!!'},'s',{env:envFor(root),fetchImpl:f,now:NOW});
+  assert.equal(bad.status,'invalid');assert.equal(bad.quick_id,undefined);assert.match(bad.note,/no marker/);
   const missing=await quickCheck({handle:'demo_nobody'},'s',{env:envFor(root,{CHAT_X_LIVE:'true'}),fetchImpl:f,now:NOW});
   assert.match(expandChatMarkers(`[[SHILLCHECK_QUICK:${missing.quick_id}]]`,{dir:join(root,'reports')}),/could not find that handle/);
  }finally{rmSync(root,{recursive:true})}
@@ -95,8 +96,8 @@ test('plan task: ready-to-paste text, cached vs uncached, cost note',async()=>{
 test('markers: unknown or malicious ids are never read as files',()=>{
  const dir=tmp();
  try{
-  assert.equal(expandChatMarkers('[[SHILLCHECK_QUICK:rpt_000000000000]]',{dir}),'[result unavailable]');
-  assert.equal(expandChatMarkers('[[SHILLCHECK_QUICK:../../etc/passwd]]',{dir}),'[result unavailable]');
+  assert.equal(expandChatMarkers('[[SHILLCHECK_QUICK:rpt_000000000000]]',{dir}),'[result unavailable, please ask again]');
+  assert.equal(expandChatMarkers('[[SHILLCHECK_QUICK:../../etc/passwd]]',{dir}),'[result unavailable, please ask again]');
   assert.equal(expandChatMarkers('no marker here',{dir}),'no marker here');
  }finally{rmSync(dir,{recursive:true})}
 });

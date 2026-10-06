@@ -25,7 +25,7 @@ export function chatEnv(env=process.env,dir=dataDir(env)){
 }
 export async function quickCheck(input,sessionId,{env=process.env,fetchImpl,now=Date.now()}={}){
  const handle=normalizeHandle(input.handle);
- if(!handle)return {status:'invalid',handle:String(input.handle).slice(0,40),verdict:'Not rated',reason:'not a valid X handle'};
+ if(!handle)return {status:'invalid',handle:String(input.handle).slice(0,40),verdict:'Not rated',reason_code:'invalid',reason:'not a valid X handle (1 to 15 letters, numbers or underscores)',note:'There is no quick_id and no marker. Tell the user in one sentence that this is not a valid X handle and ask for the right one.'};
  const fee=Number(input.fee_usd)>0?Number(input.fee_usd):undefined;
  const dir=dataDir(env);
  const deps=createDeps({env:chatEnv(env,dir),now,fetchImpl:fetchImpl??(isMock(env)?createMockFetch({now}):fetch)});

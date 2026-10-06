@@ -5,7 +5,7 @@ export const QUICK_MARKER_RE=/\[\[SHILLCHECK_QUICK:([^\]\s:]+)(?::fee=(\d+(?:\.\
 export function expandChatMarkers(message,{dir}){
  return message.replace(QUICK_MARKER_RE,(whole,id,fee)=>{
   const report=REPORT_ID_RE.test(id)?loadReport(dir,id):null;
-  if(!report||!report.analyses?.length)return '[result unavailable]';
+  if(!report||!report.analyses?.length)return '[result unavailable, please ask again]';
   return renderQuick(report,{askedFee:fee?Number(fee):null}).trimEnd();
  });
 }
