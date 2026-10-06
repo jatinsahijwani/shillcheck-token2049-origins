@@ -40,13 +40,13 @@ function kolSection(k,d,rank,constraints){
  const p=k.posts;
  s.push('**Real reach**');
  s.push(`- Followers: ${L(int(k.profile.followers),link)}${k.profile.location?` · self-reported location: ${k.profile.location}`:''}`);
- s.push(`- Averages over the last ${p.n} original posts (${day(p.from)} to ${day(p.to)}): views ${L(int(p.avgViews),link)}, likes ${L(avg(p.avgLikes),link)}, reposts ${L(avg(p.avgReposts),link)}, replies ${L(avg(p.avgReplies),link)}, quotes ${L(avg(p.avgQuotes),link)}`);
+ s.push(`- Averages over the last ${p.n} original posts (${day(p.from)} to ${day(p.to)}): views mean ${L(int(p.avgViews),link)} / **median ${L(int(p.medianViews??p.avgViews),link)}**, likes ${L(avg(p.avgLikes),link)}, reposts ${L(avg(p.avgReposts),link)}, replies ${L(avg(p.avgReplies),link)}, quotes ${L(avg(p.avgQuotes),link)}`);
  s.push(`- Engagement rate: ${L(round(p.engagementRate*100,3)+'%',link)} of followers · view rate: ${L(round(p.viewRate*100,1)+'%',link)} of followers`);
  if(k.replies.status==='ok'){
   const sig=Object.entries(k.replies.signalCounts).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1)).map(([n,c])=>`${n}: ${c}`).join('; ')||'none';
   s.push(`- Reply sample: ${k.replies.checked} unique repliers across ${k.replies.sampledPosts.map(u=>L('post',u)).join(', ')}. Bot-like (2 or more signals): ${L(`${k.replies.botLike} (${share(k.replies.share)})`,k.replies.sampledPosts[0])}. Signals seen: ${sig}. **ESTIMATE**`);
  }else s.push(`- Reply sample: could not verify. ${k.replies.reason}.`);
- if(d.estRealViews!==null)s.push(`- Estimated real views per post (**ESTIMATE**): ${int(k.posts.avgViews)} × (1 − ${d.botShare===null?'0 (no bot adjustment)':round(d.botShare,2)}) = **${int(d.estRealViews)}**`);
+ if(d.estRealViews!==null)s.push(`- Estimated real views per post (**ESTIMATE**): ${int(k.posts.medianViews??k.posts.avgViews)} median views × (1 − ${d.botShare===null?'0 (no bot adjustment)':round(d.botShare,2)}) = **${int(d.estRealViews)}**`);
  s.push('');
  s.push('**Promotion track record**');
  if(!k.promos.length)s.push(`No ticker, contract-address or promo-wording posts for non-major coins were found in the ${p.n} posts fetched.`);
@@ -62,7 +62,7 @@ function kolSection(k,d,rank,constraints){
  s.push('**Fair price (ESTIMATE)**');
  if(d.fair){
   const pr=d.fair;
-  s.push(`- ${int(pr.estRealViews)} est. real views ÷ 1000 × $${pr.cpmUsd} CPM × ${pr.multiplier} outcome multiplier = **${usd(pr.usd)}**`);
+  s.push(`- ${int(pr.estRealViews)} est. real views (median views × (1 − bot share)) ÷ 1000 × $${pr.cpmUsd} CPM × ${pr.multiplier} outcome multiplier = **${usd(pr.usd)}**`);
   if(d.quotedFee)s.push(`- Quoted fee: ${usd(d.quotedFee)}`);
  }else s.push('- Could not verify: view counts were unavailable.');
  s.push('',`**Verdict: ${d.verdict.label}.** ${d.verdict.reasons.length>1?d.verdict.reasons.join('; ')+'.':d.verdict.reason+'.'}`,'');
@@ -88,11 +88,11 @@ export function renderReport(report){
  o.push('','**Assumptions**',...assumptions.map(a=>`- ${a}`));
  const ranked=decision.ranked.map(h=>({d:dec.get(h),k:kol.get(h)}));
  const unrated=analyses.filter(k=>k.status!=='ok'&&!decision.excluded.some(e=>e.handle===k.handle));
- o.push('','## Summary','','| # | KOL | Verdict | Followers | Avg views | Bot-like replies (est.) | Est. real views | Median 30-day | Fair price (est.) |','|---|---|---|---|---|---|---|---|---|');
+ o.push('','## Summary','','| # | KOL | Verdict | Followers | Views median (mean) | Bot-like replies (est.) | Est. real views | Median 30-day | Fair price (est.) |','|---|---|---|---|---|---|---|---|---|');
  ranked.forEach(({d,k},i)=>{
   if(k.status!=='ok')return;
   const link=k.profile.url,first=k.promos.find(p=>p.outcome?.pct30!==null&&p.outcome?.pct30!==undefined);
-  o.push(`| ${i+1} | ${L('@'+k.handle,link)} | **${d.verdict.label}** | ${L(int(k.profile.followers),link)} | ${L(int(k.posts.avgViews),link)} | ${d.botShare===null||d.botShare===undefined?'could not verify':L(share(d.botShare),k.replies.sampledPosts?.[0]??link)} | ${d.estRealViews===null?'could not verify':L(int(d.estRealViews),link)} | ${d.outcomes.median30===null?'n/a':L(pct(d.outcomes.median30),cgPage(first)??link)} | ${d.fair?L(usd(d.fair.usd),link):'could not verify'} |`);
+  o.push(`| ${i+1} | ${L('@'+k.handle,link)} | **${d.verdict.label}** | ${L(int(k.profile.followers),link)} | ${L(`${int(k.posts.medianViews??k.posts.avgViews)} (${int(k.posts.avgViews)})`,link)} | ${d.botShare===null||d.botShare===undefined?'could not verify':L(share(d.botShare),k.replies.sampledPosts?.[0]??link)} | ${d.estRealViews===null?'could not verify':L(int(d.estRealViews),link)} | ${d.outcomes.median30===null?'n/a':L(pct(d.outcomes.median30),cgPage(first)??link)} | ${d.fair?L(usd(d.fair.usd),link):'could not verify'} |`);
  });
  for(const k of unrated)o.push(`| – | ${k.status==='invalid'?k.handle:L('@'+k.handle,`https://x.com/${k.handle}`)} | Not rated | – | – | – | – | – | ${k.status==='not_found'?'not found':'could not verify'} |`);
  o.push('','## Key takeaways','');
@@ -129,7 +129,7 @@ export function renderReport(report){
  const urls=new Set();
  for(const k of analyses){if(k.profile)urls.add(k.profile.url);for(const p of k.promos){urls.add(p.postUrl);if(p.coin?.url)urls.add(p.coin.url)}for(const u of k.replies?.sampledPosts??[])urls.add(u)}
  o.push('Price data by CoinGecko / DefiLlama. Posts and profiles from X.','',...[...urls].sort().map(u=>`- ${u}`),'');
- o.push(`Rules: bot-like reply = ${RULES.botSignalsNeeded}+ of: account under ${RULES.botAgeDays} days, default avatar, under ${RULES.botFollowers} followers, generic hype-only text, duplicate text. Fair price = est. real views ÷ 1000 × CPM × outcome multiplier (median 30-day change above −20%: 1.0; −20% to −50%: 0.75; −50% or lower: 0.5). Avoid: bot share ${RULES.avoidBotShare*100}% or more, or 2+ promoted tokens down more than 70% at 30 days, or median 30-day change −50% or lower with ${RULES.avoidMinPromos}+ priced promotions. Negotiate: bot share ${RULES.negotiateBotShare*100}-${RULES.avoidBotShare*100}%, engagement under ${RULES.lowEngagementRate*100}% of followers, a contract-address post without a disclosure word, median 30-day change −20% to −50%, or a quoted fee above ${RULES.negotiateFeeFactor}x fair price. Otherwise Hire. Promotion = a ticker, contract address or promo wording in an original post, major coins excluded, up to ${RULES.maxPromoCoins} coins per KOL.`);
+ o.push(`Rules: bot-like reply = ${RULES.botSignalsNeeded}+ of: account under ${RULES.botAgeDays} days, default avatar, under ${RULES.botFollowers} followers, generic hype-only text, duplicate text. Fair price = est. real views (median post views × (1 − bot share)) ÷ 1000 × CPM × outcome multiplier (median 30-day change above −20%: 1.0; −20% to −50%: 0.75; −50% or lower: 0.5). Avoid: bot share ${RULES.avoidBotShare*100}% or more, or 2+ promoted tokens down more than 70% at 30 days, or median 30-day change −50% or lower with ${RULES.avoidMinPromos}+ priced promotions. Negotiate: bot share ${RULES.negotiateBotShare*100}-${RULES.avoidBotShare*100}%, engagement under ${RULES.lowEngagementRate*100}% of followers, a contract-address post without a disclosure word, median 30-day change −20% to −50%, or a quoted fee above ${RULES.negotiateFeeFactor}x fair price. Otherwise Hire. Promotion = a ticker, contract address or promo wording in an original post, major coins excluded, up to ${RULES.maxPromoCoins} coins per KOL.`);
  return o.join('\n')+'\n';
 }
 

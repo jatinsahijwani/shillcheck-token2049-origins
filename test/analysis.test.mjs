@@ -32,6 +32,14 @@ test('post averages use the latest 50 originals; rates against followers',()=>{
  const s=postStats(posts,10000);
  assert.equal(s.n,50);assert.equal(s.avgViews,1000);assert.equal(s.engagementRate,18/10000);assert.equal(s.viewRate,0.1);
 });
+test('fair price uses median views, so viral outliers do not inflate it',()=>{
+ const posts=[...Array.from({length:9},(_,i)=>({created_at:iso(i),metrics:{impression_count:1000}})),{created_at:iso(20),metrics:{impression_count:1000000}}];
+ const s=postStats(posts,10000);
+ assert.equal(s.medianViews,1000);assert.equal(s.avgViews,100900);
+ const kol={handle:'v',status:'ok',profile:{location:''},posts:s,replies:{share:0},promos:[]};
+ const out=decide([kol],mergeConstraints({}, {}));
+ assert.equal(out.decisions[0].estRealViews,1000);assert.equal(out.decisions[0].fair.usd,15);
+});
 test('estimated real views and fair price formula',()=>{
  assert.equal(estimateRealViews(100000,0.25),75000);
  assert.deepEqual({u:fairPrice({estRealViews:75000,cpmUsd:15,median30:12}).usd,m:fairPrice({estRealViews:75000,cpmUsd:15,median30:12}).multiplier},{u:1125,m:1});

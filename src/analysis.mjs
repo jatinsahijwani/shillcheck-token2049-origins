@@ -10,7 +10,7 @@ export function median(xs){
 export function postStats(posts,followers){
  const sample=[...posts].sort((a,b)=>a.created_at<b.created_at?1:-1).slice(0,RULES.originalPostsForAverages);
  const avg=k=>mean(sample.map(p=>Number(p.metrics?.[k])||0));
- const out={n:sample.length,avgViews:avg('impression_count'),avgLikes:avg('like_count'),avgReposts:avg('retweet_count'),avgReplies:avg('reply_count'),avgQuotes:avg('quote_count')};
+ const out={n:sample.length,avgViews:avg('impression_count'),medianViews:median(sample.map(p=>Number(p.metrics?.impression_count)||0)),avgLikes:avg('like_count'),avgReposts:avg('retweet_count'),avgReplies:avg('reply_count'),avgQuotes:avg('quote_count')};
  const interactions=out.avgLikes+out.avgReposts+out.avgReplies+out.avgQuotes;
  out.engagementRate=followers>0?interactions/followers:null;
  out.viewRate=followers>0?out.avgViews/followers:null;

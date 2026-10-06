@@ -22,8 +22,9 @@ export function decide(kols,constraints){
   if(k.status!=='ok')return {handle:k.handle,excluded:excludeSet.has(key)?'excluded by request':null,verdict:{label:'Not rated',reasons:[],reason:k.status==='not_found'?'handle not found on X':k.status==='invalid'?'not a valid X handle':`data could not be retrieved${k.error?` (${k.error})`:''}`},estRealViews:null,fair:null};
   const outcomes=summarizeOutcomes(k.promos);
   const botShare=k.replies.share??null;
-  const avgViews=k.posts.viewsAvailable?k.posts.avgViews:null;
-  const estRealViews=avgViews===null?null:estimateRealViews(avgViews,botShare);
+  // Fair price uses MEDIAN views: a few viral posts inflate the mean. Reports stored before this change only have the mean.
+  const baseViews=!k.posts.viewsAvailable?null:k.posts.medianViews??k.posts.avgViews;
+  const estRealViews=baseViews===null?null:estimateRealViews(baseViews,botShare);
   const fair=estRealViews===null?null:fairPrice({estRealViews,cpmUsd:cpm,median30:outcomes.median30});
   const quotedFee=constraints.quoted_fees?.[key]??null;
   const v=verdict({botShare,outcomes,engagementRate:k.posts.engagementRate,undisclosedContractPromos:k.promos.filter(p=>p.via==='contract'&&!p.disclosed).length,quotedFee,fairUsd:fair?.usd});

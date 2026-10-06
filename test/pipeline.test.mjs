@@ -37,7 +37,7 @@ test('scenario 1, normal input: ranked verdicts, sources, estimate labels, mock 
   assert.doesNotMatch(md,/scam|fraud|rug pull|liar/i,'facts only');
   assert.match(md,/Unallocated: \$/);
   assert.match(md,/@demo_nobody: not found on X/);
-  assert.match(md,/est\. real views ÷ 1000 × \$15 CPM/);
+  assert.match(md,/est\. real views \(median views × \(1 − bot share\)\) ÷ 1000 × \$15 CPM/);
   const disk=loadReport(dir,report.id);
   assert.equal(disk.markdown,md);assert.ok(disk.params&&disk.constraints&&disk.analyses.length===4);
   assert.deepEqual(readdirSync(dir).sort(),[`${report.id}.json`,`${report.id}.md`]);
