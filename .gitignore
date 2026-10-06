@@ -22,8 +22,12 @@ AGENTS.md
 .github/copilot-instructions.md
 .mcp.json
 
-# agent prompt is source, not tooling clutter
+# runtime files the app needs, plus the submission readme
 !agent/instructions.md
 !README.md
-!SHILLCHECK_HANDOFF.md
-!docs/*.md
+
+# local-only state and AI/session artifacts
+SHILLCHECK_HANDOFF.md
+docs/registration-state.json
+docs/*.md
+.claude*/
