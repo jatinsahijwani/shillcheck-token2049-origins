@@ -13,7 +13,7 @@ for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{releaseLock();
 function cli(args){return JSON.parse(execFileSync('sokosumi',['--preprod',...args,'--json'],{encoding:'utf8',timeout:30000,maxBuffer:4*1024*1024}));}
 await client.health();
 const paid=await createPaidAdapter({answer,save:async(taskId,state)=>writeFileSync(`.local/${taskId}.json`,JSON.stringify(state),{mode:0o600})});
-console.log('Continuous worker running',process.pid);
+console.log('Continuous worker running',process.pid,'paid tasks enabled:',process.env.PAID_TASKS_ENABLED==='true');
 while(true){
  try{
  const tasks=cli(['tasks','list','--coworker-id',id]).tasks;

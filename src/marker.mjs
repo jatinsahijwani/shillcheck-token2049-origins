@@ -4,8 +4,8 @@ export const MARKER_RE=/\[\[SHILLCHECK_REPORT:([^\]\s]+)\]\]/g;
 // Replace [[SHILLCHECK_REPORT:<id>]] with the stored markdown. This runs before the result is saved or hashed,
 // so the paid bytes are final. If the model forgot the marker and exactly one report was created during this call, append it.
 // compact:true is for follow-up comments (short re-ranked summary); the paid result always uses the full report.
-export function expandReportMarker(message,{dir,sessionId,sinceMs,compact=false}){
- const text=r=>(compact?renderCompact(r):r.markdown).trimEnd();
+export function expandReportMarker(message,{dir,sessionId,sinceMs,compact=false,paid=false}){
+ const text=r=>(compact?renderCompact(r,{paid}):r.markdown).trimEnd();
  let found=false;
  const expanded=message.replace(MARKER_RE,(whole,id)=>{
   found=true;

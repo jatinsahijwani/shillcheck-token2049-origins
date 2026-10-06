@@ -134,7 +134,7 @@ export function renderReport(report){
 }
 
 // Short form for follow-up comments: active constraints, re-ranked table, budget split. The paid result stays the full report.
-export function renderCompact(report){
+export function renderCompact(report,{paid=false}={}){
  const {analyses,decision,constraints}=report;
  const by=new Map(decision.decisions.map(d=>[d.handle,d]));
  const kol=new Map(analyses.map(k=>[k.handle,k]));
@@ -146,7 +146,7 @@ export function renderCompact(report){
  if(constraints.exclude_handles?.length)active.push(`excluded: ${constraints.exclude_handles.map(h=>'@'+h).join(', ')}`);
  if(Number(constraints.cpm_usd)>0)active.push(`CPM $${constraints.cpm_usd}`);
  if(Object.keys(constraints.quoted_fees??{}).length)active.push(`quoted fees: ${Object.entries(constraints.quoted_fees).map(([h,v])=>`@${h} ${usd(v)}`).join(', ')}`);
- const o=[`**Re-ranked (report ${report.id}).** The paid result is unchanged.`,'',`**Active constraints:** ${active.length?active.join('; '):'none'}.`,'','| # | KOL | Verdict | Est. real views | Fair price (est.) | Allocation |','|---|---|---|---|---|---|'];
+ const o=[`**Re-ranked (report ${report.id}).**${paid?' The paid result is unchanged.':''}`,'',`**Active constraints:** ${active.length?active.join('; '):'none'}.`,'','| # | KOL | Verdict | Est. real views | Fair price (est.) | Allocation |','|---|---|---|---|---|---|'];
  decision.ranked.forEach((h,i)=>{
   const d=by.get(h),k=kol.get(h);
   if(k.status!=='ok')return;

@@ -120,6 +120,8 @@ test('follow-up comments get a compact reply, not the full report',async()=>{
   assert.ok(compact.length<r2.markdown.length/2&&compact.length<3000,`${compact.length} vs ${r2.markdown.length}`);
   assert.match(compact,/Active constraints:\*\* budget \$20,000; fee cap \$5,000 per KOL; region focus: asia/);
   assert.match(compact,/\| 1 \| \[@demo_alpha\]/);assert.match(compact,/unallocated/);assert.doesNotMatch(compact,/Real reach|Promotion track record/);
+  assert.doesNotMatch(compact,/paid result/,'free Task: no claim about a paid result');
+  assert.match(expandReportMarker(`[[SHILLCHECK_REPORT:${r2.id}]]`,{dir,sessionId:'s',sinceMs:0,compact:true,paid:true}),/The paid result is unchanged/);
   assert.match(expandReportMarker(`[[SHILLCHECK_REPORT:${r2.id}]]`,{dir,sessionId:'s',sinceMs:0}),/Real reach/,'default stays full');
  }finally{rmSync(dir,{recursive:true})}
 });

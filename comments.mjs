@@ -19,7 +19,7 @@ export async function reply(taskId){
  const response=await(await client.sessions.attach(sessionId).send(event.comment.slice(0,16000))).result();
  if(response.status==='failed'||response.inputRequests.length||!response.message?.trim())continue;
  state[event.id]='post-pending';writeFileSync(p,JSON.stringify(state),{mode:0o600});
- await createTaskEvent(runtime,taskId,{comment:expandReportMarker(response.message,{dir:dataDir(),sessionId,sinceMs:startedAt,compact:true})},AbortSignal.timeout(30000));
+ await createTaskEvent(runtime,taskId,{comment:expandReportMarker(response.message,{dir:dataDir(),sessionId,sinceMs:startedAt,compact:true,paid:Boolean(JSON.parse(readFileSync(`.local/${taskId}.json`,'utf8')).paid)})},AbortSignal.timeout(30000));
  state[event.id]='posted';writeFileSync(p,JSON.stringify(state),{mode:0o600});
  }
 }
