@@ -71,7 +71,7 @@ export function createDeps({env=process.env,fetchImpl=fetch,now=Date.now(),sleep
  const cache=createCache({dir:mock?undefined:cacheDir(env)});
  const xBudget=createBudget({max:cap.maxXCalls,label:'X API'}),cgBudget=createBudget({max:cap.maxCoinGeckoCalls,label:'CoinGecko'});
  return {mock,now,limits:cap,
-  x:createXClient({bearer:env.X_BEARER_TOKEN,fetchImpl,cache,budget:xBudget,sleep}),
+  x:createXClient({bearer:env.X_BEARER_TOKEN,fetchImpl,cache,budget:xBudget,sleep,maxCostUsd:cap.maxXCostUsd}),
   cg:createCoinGecko({apiKey:env.COINGECKO_API_KEY,fetchImpl,cache,budget:cgBudget,ratePerMin:cap.coingeckoRatePerMin,sleep}),
   llama:createDefiLlama({fetchImpl,cache,sleep})};
 }

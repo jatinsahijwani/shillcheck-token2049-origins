@@ -12,6 +12,7 @@ const int=(value,fallback)=>{const n=Number(value);return Number.isFinite(n)&&n>
 export const limits=(env=process.env)=>({
  maxXCalls:int(env.SHILLCHECK_MAX_X_CALLS,60),
  maxCoinGeckoCalls:int(env.SHILLCHECK_MAX_CG_CALLS,150),
+ maxXCostUsd:Number(env.SHILLCHECK_MAX_X_COST_USD)>0?Number(env.SHILLCHECK_MAX_X_COST_USD):8,
  maxRunMs:int(env.SHILLCHECK_MAX_RUN_MS,7*60*1000),
  coingeckoRatePerMin:int(env.COINGECKO_RATE_PER_MIN,28),
  concurrency:3,

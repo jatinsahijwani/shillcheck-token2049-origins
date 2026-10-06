@@ -102,6 +102,12 @@ test('call caps are enforced and labeled',async()=>{
  assert.ok(f.calls.filter(u=>u.includes('api.x.com')).length<=3);
  assert.match(report.markdown,/X API call cap reached \(3\)/);
 });
+test('estimated X spend cap stops further X reads and is labeled',async()=>{
+ const f=counting(createMockFetch({now:NOW}));
+ const report=await vetKols({handles:HANDLES},{deps:deps(f,{SHILLCHECK_MAX_X_COST_USD:'1'}),dir:tmp()});
+ assert.ok(report.usage.estXCostUsd<=1.01,`${report.usage.estXCostUsd}`);
+ assert.match(report.markdown,/estimated X spend cap of \$1 reached/);
+});
 test('recent-search window: when no post is under 7 days old, replies are not searched and the gap is labeled',async()=>{
  const f=counting(createMockFetch({now:NOW}));
  const later=createDeps({env,now:NOW+30*86400000,sleep,fetchImpl:f});
