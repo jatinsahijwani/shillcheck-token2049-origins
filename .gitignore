@@ -1,33 +1,32 @@
-.env
-.env.*
+# secrets and local state
+.env*
 !.env.example
 .postgres.env
 .local/
+
+# build and runtime output
 node_modules/
 .eve/
 .workflow/
 .output/
 dist/
+logs/
+*.log
+.DS_Store
 
-# docs / AI tooling clues kept out of the repo
-*.md
-!.env.example
+# AI tooling artifacts and docs (README.md and the agent prompt stay tracked)
 .claude/
+.claude*/
 CLAUDE.md
 AGENTS.md
+SHILLCHECK_HANDOFF.md
 .cursor/
 .cursorrules
 .windsurf/
 .aider*
-.github/copilot-instructions.md
 .mcp.json
-
-# runtime files the app needs, plus the submission readme
-!agent/instructions.md
+.github/copilot-instructions.md
+docs/
+*.md
 !README.md
-
-# local-only state and AI/session artifacts
-SHILLCHECK_HANDOFF.md
-docs/registration-state.json
-docs/*.md
-.claude*/
+!agent/instructions.md
