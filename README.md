@@ -16,6 +16,23 @@ Processes (run from the repo root, Node 24+, `.env` filled from `.env.example`):
 Hand-check without the model: `npm run report -- "@a @b budget $10k asia"`. Offline fixtures: `SHILLCHECK_MOCK=true` (the worker and API refuse to start in mock mode).
 Tests: `npm test`.
 
+## Deployment (AWS)
+
+Production runs on one EC2 instance (Ubuntu 24.04, Elastic IP, encrypted EBS) under pm2:
+
+| Process | Role | Listens |
+|---|---|---|
+| `shillcheck-mps` | Masumi Payment Service, same wallets and registration | 127.0.0.1:38127 |
+| `shillcheck-eve` | Task agent | 127.0.0.1:21949 |
+| `shillcheck-api` | Masumi Standard API (registered URL) | 127.0.0.1:21950 |
+| `shillcheck-worker` | Task worker, exactly one | none |
+| `shillcheck-chat-eve` | chat agent | 127.0.0.1:21971 |
+| `shillcheck-chat` | Responses endpoint for chat | 127.0.0.1:21970 |
+
+Postgres 16 runs on the same host (loopback only). Caddy terminates HTTPS and forwards only `/c/*` to the chat endpoint; everything else returns 404. SSH is limited to the admin IP by the security group. The worker has no OS vault: it reads the Coworker key from a 600 file (`COWORKER_API_KEY_FILE`) and passes it to the Sokosumi CLI over stdin. A daily `pg_dump` and state archive stay under `~/backups` (7 kept).
+
+Update: `git pull && pm2 restart ecosystem.config.cjs --update-env`. Never run a second worker or a second MPS against the same wallet: stop the old host first.
+
 ## X cost and cache settings
 
 X reads cost money ($0.01 per user, $0.005 per post), so they are cached per handle and capped per report.
@@ -52,6 +69,16 @@ Notes for judges:
 - The three sample handles are pre-fetched, so the sample Task costs no extra X API spend. Other handles are fetched live from X when live reads are enabled (see the cost settings above); otherwise they are reported as "could not verify".
 - Reply-quality (bot) sampling only works for KOLs who posted in the last 7 days, because the X recent-search window is 7 days. Otherwise the report says so and does not adjust for bots.
 - Availability: the worker runs continuously from 7 Oct 2026 and is kept up at least through the prize ceremony on 8 Oct 2026 16:00 SGT.
+
+## Chat
+
+ShillCheck also works in Sokosumi chat (capability `chat` plus `tasks`). Ask in plain language:
+
+- `is @cobie worth $3K?` gives a quick verdict from cached data: Hire / Negotiate / Avoid, a fair price estimate, real vs bot reach, and how past promoted tokens performed. The verdict block is rendered by code, not written by the model.
+- `vet these 3: @a @b @c, budget $20K, Asia` returns the exact Task text to paste, which handles are cached, and what a live read would cost.
+- Follow-ups such as "why is the fair price that number?", "what does Negotiate mean?" or "assume a $20 CPM" are answered from the stored numbers.
+
+How it works: Sokosumi Core streams chat to `{baseURL}/responses` (OpenAI Responses format, server-sent events). `chat/server.mjs` implements that endpoint, rate limits per user, and keeps one conversation per chat in a second eve agent (`chat-agent/`) with its own prompt and two tools (`quick_check`, `plan_task`). Core sends no credential, so the registered base URL contains a secret path segment. Chat reads X from cache only unless `CHAT_X_LIVE=true`, and live reads stop at `CHAT_X_DAILY_USD` per day.
 
 ## Evidence (Cardano Preprod, verified paid Task)
 
