@@ -1,6 +1,8 @@
 import {RULES} from './config.mjs';
 import {estimateRealViews,fairPrice,rankKols,round,splitBudget,summarizeOutcomes,verdict} from './analysis.mjs';
 import {regionFit} from './region.mjs';
+const money=n=>`$${n>=100?Math.round(n).toLocaleString('en-US'):n.toFixed(2)}`;
+const capLabel=n=>n>=1000&&n%1000===0?`$${n/1000}K`:money(n);
 const lc=h=>String(h).toLowerCase();
 // Merge a follow-up onto the stored constraints. Earlier constraints stay unless the new value replaces them.
 export function mergeConstraints(prior={},update={}){
@@ -27,8 +29,10 @@ export function decide(kols,constraints){
   const v=verdict({botShare,outcomes,engagementRate:k.posts.engagementRate,undisclosedContractPromos:k.promos.filter(p=>p.via==='contract'&&!p.disclosed).length,quotedFee,fairUsd:fair?.usd});
   const fit=regionFit(constraints.region,k.profile.location);
   let excluded=null;
+  // Fee cap drops a KOL on the quoted fee if given, otherwise on the estimated fair price.
+  const feeBasis=quotedFee!==null?{label:'quoted fee',usd:quotedFee}:fair?{label:'est. fair price',usd:fair.usd}:null;
   if(excludeSet.has(key))excluded='excluded by request';
-  else if(maxFee!==null&&quotedFee!==null&&quotedFee>maxFee)excluded=`quoted fee $${Math.round(quotedFee)} is above the $${Math.round(maxFee)} cap`;
+  else if(maxFee!==null&&feeBasis&&feeBasis.usd>maxFee)excluded=`${feeBasis.label} ${money(feeBasis.usd)} > ${capLabel(maxFee)} cap`;
   return {handle:k.handle,excluded,verdict:v,estRealViews,botShare,outcomes,fair,quotedFee,regionFit:fit,regionOrder:fit==='match'?0:fit==='unknown'||fit==='n/a'?1:2};
  });
  const active=decisions.filter(d=>!d.excluded);

@@ -82,7 +82,7 @@ export function renderReport(report){
  if(constraints.goal)assumptions.push(`Goal: ${constraints.goal}.`);
  if(constraints.niche)assumptions.push(`Niche/chain: ${constraints.niche}.`);
  if(constraints.region)assumptions.push(`Region focus: ${constraints.region}. Location is self-reported; blank means unknown.`);
- if(constraints.max_fee_usd)assumptions.push(`Fee cap: ${usd(Number(constraints.max_fee_usd))} per KOL.`);
+ if(constraints.max_fee_usd)assumptions.push(`Fee cap: ${usd(Number(constraints.max_fee_usd))} per KOL. KOLs above it are dropped (quoted fee if given, otherwise estimated fair price).`);
  if(constraints.exclude_handles?.length)assumptions.push(`Excluded by request: ${constraints.exclude_handles.map(h=>'@'+h).join(', ')}.`);
  assumptions.push(...report.notes);
  o.push('','**Assumptions**',...assumptions.map(a=>`- ${a}`));
@@ -115,7 +115,7 @@ export function renderReport(report){
   for(const {d,k} of ranked){if(k.status!=='ok')continue;const amt=b?decision.budget.allocations?.[d.handle]:undefined;const note=!['Hire','Negotiate'].includes(d.verdict.label)?'not funded (Avoid)':d.regionFit==='mismatch'?'not funded (outside region focus)':null;o.push(`| ${L('@'+k.handle,k.profile.url)} | ${d.verdict.label} | ${d.fair?usd(d.fair.usd):'could not verify'} | ${d.quotedFee?usd(d.quotedFee):'n/a'} | ${note??usd(amt??0)} |`)}
   o.push('',`**Unallocated: ${usd(b.unallocated)}**`);
  }
- if(decision.excluded.length)o.push('','Excluded from ranking and budget: '+decision.excluded.map(e=>`@${e.handle} (${e.reason})`).join('; ')+'.');
+ if(decision.excluded.length)o.push('',...decision.excluded.map(e=>`- Dropped @${e.handle}: ${e.reason}`));
  o.push('','## Could not verify','');
  const cnv=[];
  for(const k of analyses){
@@ -153,7 +153,7 @@ export function renderCompact(report){
   const alloc=!b?'n/a':b.allocations[h]>0?usd(b.allocations[h]):!['Hire','Negotiate'].includes(d.verdict.label)?'not funded (Avoid)':d.regionFit==='mismatch'?'not funded (outside region)':usd(0);
   o.push(`| ${i+1} | ${L('@'+h,k.profile.url)} | ${d.verdict.label} | ${d.estRealViews===null?'could not verify':int(d.estRealViews)} | ${d.fair?usd(d.fair.usd):'could not verify'} | ${alloc} |`);
  });
- if(decision.excluded.length)o.push('','Excluded: '+decision.excluded.map(e=>`@${e.handle} (${e.reason})`).join('; ')+'.');
+ if(decision.excluded.length)o.push('',...decision.excluded.map(e=>`- Dropped @${e.handle}: ${e.reason}`));
  o.push('',b?`**Budget split:** ${usd(b.allocated)} of ${usd(b.total)} allocated, **${usd(b.unallocated)} unallocated** (spend is capped at fair price).`:'**Budget split:** budget not given, fair prices only.');
  return o.join('\n')+'\n';
 }

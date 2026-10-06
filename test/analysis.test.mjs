@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {botSignals,estimateRealViews,fairPrice,isGenericHype,median,outcomeMultiplier,postStats,rankKols,replyQuality,splitBudget,summarizeOutcomes,verdict} from '../src/analysis.mjs';
 import {mergeConstraints,decide} from '../src/decide.mjs';
+import {regionFit,regionsOf} from '../src/region.mjs';
 const NOW=Date.parse('2026-10-06T00:00:00Z');
 const iso=daysAgo=>new Date(NOW-daysAgo*86400000).toISOString();
 const user=(over={})=>({id:'u'+Math.random(),created_at:iso(900),public_metrics:{followers_count:500},profile_image_url:'https://pbs.twimg.com/profile_images/1/a.jpg',...over});
@@ -91,4 +92,28 @@ test('decide: quoted fee above cap drops the KOL from ranking and budget',()=>{
  const out=decide([kol('a',100000),kol('b',100000)],mergeConstraints({}, {budget_usd:5000,max_fee_usd:2000,quoted_fees:{b:3000}}));
  assert.deepEqual(out.ranked,['a']);assert.deepEqual(out.excluded.map(e=>e.handle),['b']);
  assert.equal(out.budget.allocations.a,1425);assert.equal(out.budget.unallocated,3575);
+});
+test('fee cap drops on estimated fair price when no fee was quoted',()=>{
+ const kol=(handle,views)=>({handle,status:'ok',profile:{location:''},posts:{viewsAvailable:true,avgViews:views,engagementRate:0.01},replies:{share:0},promos:[]});
+ const out=decide([kol('big',1000000),kol('small',100000)],mergeConstraints({}, {budget_usd:20000,max_fee_usd:5000}));
+ assert.deepEqual(out.ranked,['small']);
+ assert.deepEqual(out.excluded,[{handle:'big',reason:'est. fair price $15,000 > $5K cap'}]);
+ assert.equal(out.budget.allocations.big,undefined);
+ const quoted=decide([kol('big',1000000)],mergeConstraints({}, {max_fee_usd:5000,quoted_fees:{big:4000}}));
+ assert.deepEqual(quoted.ranked,['big'],'a quote under the cap keeps them even if fair price is higher');
+ assert.equal(decide([kol('x',100000)],mergeConstraints({}, {max_fee_usd:5000,quoted_fees:{x:6000}})).excluded[0].reason,'quoted fee $6,000 > $5K cap');
+});
+test('regions: countries and cities map to regions',()=>{
+ assert.equal(regionFit('asia','Ujjain, India'),'match');
+ assert.equal(regionFit('Asia','Dubai'),'mismatch');
+ assert.equal(regionFit('mena','Dubai'),'match');
+ for(const [loc,region] of [['London, UK','europe'],['Lagos, Nigeria','africa'],['Sydney','oceania'],['São Paulo','latam'],['NYC','north america'],['Zug','europe'],['Tokyo','asia'],['Istanbul','mena']])assert.deepEqual(regionsOf(loc),[region],loc);
+ assert.deepEqual(regionsOf('Singapore / Dubai').sort(),['asia','mena']);
+ assert.equal(regionFit('asia','Singapore / Dubai'),'match');
+ assert.equal(regionFit('southeast asia','Jakarta'),'match');
+ assert.equal(regionFit('sea','Berlin'),'mismatch');
+});
+test('regions: blank or unrecognised location is unknown, never a mismatch',()=>{
+ for(const loc of ['','Travelling','the internet','Earth'])assert.equal(regionFit('asia',loc),'unknown',loc);
+ assert.equal(regionFit(undefined,'Dubai'),'n/a');
 });
