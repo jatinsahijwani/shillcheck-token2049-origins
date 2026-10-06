@@ -1,6 +1,8 @@
 import {readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {client} from './client.mjs';
 import {loadSokosumiRuntime} from './sokosumi-runtime.mjs';
+import {expandReportMarker} from './src/marker.mjs';
+import {dataDir} from './src/config.mjs';
 const {readRuntimeCredential,createCoworkerHttpClient,fetchTaskEvents,createTaskEvent}=await loadSokosumiRuntime();
 const runtime=createCoworkerHttpClient({apiKey:readRuntimeCredential(process.env.COWORKER_ID)});
 export async function reply(taskId){
@@ -13,10 +15,11 @@ export async function reply(taskId){
  for(const event of events.filter(e=>e.actor?.type==='user'&&typeof e.comment==='string'&&e.comment.trim())){
  if(state[event.id])continue;
  state[event.id]='model-pending';writeFileSync(p,JSON.stringify(state),{mode:0o600});
+ const startedAt=Date.now();
  const response=await(await client.sessions.attach(sessionId).send(event.comment.slice(0,16000))).result();
  if(response.status==='failed'||response.inputRequests.length||!response.message?.trim())continue;
  state[event.id]='post-pending';writeFileSync(p,JSON.stringify(state),{mode:0o600});
- await createTaskEvent(runtime,taskId,{comment:response.message},AbortSignal.timeout(30000));
+ await createTaskEvent(runtime,taskId,{comment:expandReportMarker(response.message,{dir:dataDir(),sessionId,sinceMs:startedAt})},AbortSignal.timeout(30000));
  state[event.id]='posted';writeFileSync(p,JSON.stringify(state),{mode:0o600});
  }
 }

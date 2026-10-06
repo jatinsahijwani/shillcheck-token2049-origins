@@ -3,6 +3,7 @@ import {createRequire} from 'node:module';
 import {dirname,resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {readFileSync} from 'node:fs';
+import {dataDir} from './src/config.mjs';
 export function eveAddress(env){
  const url=env.EVE_URL?new URL(env.EVE_URL):null;
  const port=Number(env.EVE_PORT??url?.port);
@@ -18,7 +19,7 @@ export function eveBinary(resolveModule=createRequire(import.meta.url).resolve){
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  const {port,url}=eveAddress(process.env);
- const child=spawn(process.execPath,[eveBinary(),'dev','--no-ui','--no-default-extensions','--host','127.0.0.1','--port',String(port)],{stdio:'inherit',env:{...process.env,EVE_PORT:String(port),EVE_URL:url}});
+ const child=spawn(process.execPath,[eveBinary(),'dev','--no-ui','--no-default-extensions','--host','127.0.0.1','--port',String(port)],{stdio:'inherit',env:{...process.env,EVE_PORT:String(port),EVE_URL:url,SHILLCHECK_DATA_DIR:dataDir()}});
  child.on('error',()=>{console.error('Eve could not start');process.exitCode=1;});
  child.on('exit',(code,signal)=>{process.exitCode=code??(signal?1:0);});
  for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>child.kill(signal));
