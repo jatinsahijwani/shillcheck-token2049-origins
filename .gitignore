@@ -1,0 +1,26 @@
+.env
+.env.*
+!.env.example
+.postgres.env
+.local/
+node_modules/
+.eve/
+.workflow/
+.output/
+dist/
+
+# docs / AI tooling clues kept out of the repo
+*.md
+!.env.example
+.claude/
+CLAUDE.md
+AGENTS.md
+.cursor/
+.cursorrules
+.windsurf/
+.aider*
+.github/copilot-instructions.md
+.mcp.json
+
+# agent prompt is source, not tooling clutter
+!agent/instructions.md
