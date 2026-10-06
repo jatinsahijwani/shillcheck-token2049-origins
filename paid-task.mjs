@@ -3,6 +3,7 @@ import {readFileSync,existsSync,writeFileSync} from 'node:fs';
 import {parseEnv} from 'node:util';
 import {verifySettlement} from './settlement.mjs';
 import {loadSokosumiRuntime,runtimeReceipt} from './sokosumi-runtime.mjs';
+import {readCoworkerKey,runtimeCliAuth} from './src/coworker-key.mjs';
 import {loadRegistration} from './src/registration.mjs';
 const MINUTE=60*1000;
 export const USDM='16a55b2a349361ff88c03788f93e1e966e5d689605d044fef722ddde0014df10745553444d';
@@ -34,8 +35,8 @@ export async function createPaidAdapter({save,answer,core:providedCore,mps:provi
  const registration=()=>providedRegistration??loadRegistration();
  let core=providedCore;
  async function getCore(){
-  if(!core){const {readRuntimeCredential,createCoworkerHttpClient}=await loadSokosumiRuntime();
-   core=createCoworkerHttpClient({apiKey:readRuntimeCredential(process.env.COWORKER_ID)});}
+  if(!core){const {createCoworkerHttpClient}=await loadSokosumiRuntime();
+   core=createCoworkerHttpClient({apiKey:await readCoworkerKey(process.env.COWORKER_ID)});}
   return core;
  }
  async function mps(path,body){
@@ -82,7 +83,7 @@ export async function createPaidAdapter({save,answer,core:providedCore,mps:provi
     return persist(task,state,{...p,stage:'result-saved',result,resultHash:taskHash(result)});
    }
    if(p.stage==='awaiting-result'&&observed.resultHash===p.resultHash&&confirmedState(observed,'ResultSubmitted')&&observed.onChainState==='ResultSubmitted')return persist(task,state,{...p,stage:'complete-ready'});
-   if(p.stage==='awaiting-withdrawal'&&['Withdrawn','DisputedWithdrawn'].includes(observed.onChainState)){const evidence=await verifySettlement({core:await getCore(),taskId:task.id,payment:observed,sellerAddress:registration().registration?.SmartContractWallet?.walletAddress,unit:USDM,cliReceipt:cliReceipt??(id=>runtimeReceipt(id,process.env.COWORKER_ID))});return persist(task,state,{...p,stage:evidence.verified?'settled':'awaiting-withdrawal',settlement:evidence});}
+   if(p.stage==='awaiting-withdrawal'&&['Withdrawn','DisputedWithdrawn'].includes(observed.onChainState)){const evidence=await verifySettlement({core:await getCore(),taskId:task.id,payment:observed,sellerAddress:registration().registration?.SmartContractWallet?.walletAddress,unit:USDM,cliReceipt:cliReceipt??(id=>runtimeReceipt(id,process.env.COWORKER_ID,undefined,runtimeCliAuth()))});return persist(task,state,{...p,stage:evidence.verified?'settled':'awaiting-withdrawal',settlement:evidence});}
    return state;
   }
   if(p.stage==='result-saved'){

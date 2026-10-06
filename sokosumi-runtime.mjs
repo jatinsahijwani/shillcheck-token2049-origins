@@ -26,6 +26,6 @@ export function runtimeArgs(command,task,coworkerId,extra=[]){
  return ['runtime',command,task.id,...workspaceArgs(task),'--coworker-id',coworkerId,...extra];
 }
 // `runtime receipt` accepts neither --personal nor --organization-id; the Task id selects the Task.
-export function runtimeReceipt(taskId,coworkerId,run=execFileSync){
- return JSON.parse(run('sokosumi',['--preprod','runtime','receipt',taskId,'--coworker-id',coworkerId,'--json'],{encoding:'utf8',timeout:30000,maxBuffer:1024*1024}));
+export function runtimeReceipt(taskId,coworkerId,run=execFileSync,auth={args:[],input:undefined}){
+ return JSON.parse(run('sokosumi',['--preprod','runtime','receipt',taskId,'--coworker-id',coworkerId,...auth.args,'--json'],{encoding:'utf8',timeout:30000,maxBuffer:1024*1024,...(auth.input!==undefined?{input:auth.input}:{})}));
 }
