@@ -36,7 +36,9 @@ while(true){
  if(state.paid||(state.phase==='started'&&process.env.PAID_TASKS_ENABLED==='true'&&isPaidReady())){state=await paid.advance(t,state);if(state.phase==='completed')await reply(t.id);continue;}
  if(state.phase==='started'){
  writeFileSync(journal,JSON.stringify({...state,phase:'model-pending'}),{mode:0o600});
- const result=await answer(state.input,`.local/${t.id}-session.json`);
+ let result;
+ try{result=await answer(state.input,`.local/${t.id}-session.json`)}
+ catch(error){const attempts=(state.modelAttempts??0)+1;writeFileSync(journal,JSON.stringify({...state,phase:attempts<3?'started':'model-failed',modelAttempts:attempts}),{mode:0o600});throw error}
  writeFileSync(resultFile,result,{mode:0o600});state={...state,phase:'result-saved'};writeFileSync(journal,JSON.stringify(state),{mode:0o600});
  }
  if(state.phase==='result-saved'){
