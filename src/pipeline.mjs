@@ -2,7 +2,7 @@ import {randomBytes} from 'node:crypto';
 import {RULES,isMock,limits} from './config.mjs';
 import {createCache} from './cache.mjs';
 import {createBudget} from './http.mjs';
-import {createXClient,normalizeHandle} from './x-client.mjs';
+import {createXClient,normalizeHandle,ttlFromEnv} from './x-client.mjs';
 import {createCoinGecko} from './coingecko.mjs';
 import {createDefiLlama} from './defillama.mjs';
 import {detectPromos,postUrl} from './promo.mjs';
@@ -66,12 +66,12 @@ async function collectKol(handle,{x,now,deadline}){
  if(kol.replies.status!=='ok')kol.couldNotVerify.push(`reply quality: ${kol.replies.reason}. Estimated real views are not adjusted for bot share`);
  return kol;
 }
-export function createDeps({env=process.env,fetchImpl=fetch,now=Date.now(),sleep}={}){
+export function createDeps({env=process.env,fetchImpl=fetch,now=Date.now(),sleep,cache:sharedCache}={}){
  const mock=isMock(env),cap=limits(env);
- const cache=createCache({dir:mock?undefined:cacheDir(env)});
+ const cache=sharedCache??createCache({dir:mock?undefined:cacheDir(env)});
  const xBudget=createBudget({max:cap.maxXCalls,label:'X API'}),cgBudget=createBudget({max:cap.maxCoinGeckoCalls,label:'CoinGecko'});
- return {mock,now,limits:cap,
-  x:createXClient({bearer:env.X_BEARER_TOKEN,fetchImpl,cache,budget:xBudget,sleep,maxCostUsd:cap.maxXCostUsd}),
+ return {mock,now,cache,limits:cap,
+  x:createXClient({bearer:env.X_BEARER_TOKEN,fetchImpl,cache,budget:xBudget,sleep,maxCostUsd:cap.maxXCostUsd,ttlMs:ttlFromEnv(env),liveAllowed:env.X_LIVE_ALLOWED!=='false'}),
   cg:createCoinGecko({apiKey:env.COINGECKO_API_KEY,fetchImpl,cache,budget:cgBudget,ratePerMin:cap.coingeckoRatePerMin,sleep}),
   llama:createDefiLlama({fetchImpl,cache,sleep})};
 }

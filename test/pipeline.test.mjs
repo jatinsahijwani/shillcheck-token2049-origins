@@ -108,6 +108,22 @@ test('estimated X spend cap stops further X reads and is labeled',async()=>{
  assert.ok(report.usage.estXCostUsd<=1.01,`${report.usage.estXCostUsd}`);
  assert.match(report.markdown,/estimated X spend cap of \$1 reached/);
 });
+test('cache-only mode: a miss never calls X, cached handles still work, TTL is configurable',async()=>{
+ const f=counting(createMockFetch({now:NOW}));
+ const warm=deps(f);
+ await vetKols({handles:['demo_alpha']},{deps:warm,dir:tmp()});
+ const xBefore=f.calls.filter(u=>u.includes('api.x.com')).length;
+ const cold=createDeps({env:{...env,X_LIVE_ALLOWED:'false'},now:NOW,sleep,fetchImpl:f,cache:warm.cache});
+ const cached=await vetKols({handles:['demo_alpha']},{deps:cold,dir:tmp()});
+ assert.equal(cached.analyses[0].status,'ok','a cached handle works with live reads off');
+ const r=await vetKols({handles:['demo_pumper']},{deps:cold,dir:tmp()});
+ assert.equal(f.calls.filter(u=>u.includes('api.x.com')).length,xBefore,'no X call on a miss');
+ assert.match(r.markdown,/live X reads are disabled/);assert.equal(r.analyses[0].status,'error');
+});
+test('X_CACHE_TTL_HOURS controls how long X entries are served',async()=>{
+ const {ttlFromEnv}=await import('../src/x-client.mjs');
+ assert.equal(ttlFromEnv({}),6*3600000);assert.equal(ttlFromEnv({X_CACHE_TTL_HOURS:'48'}),48*3600000);assert.equal(ttlFromEnv({X_CACHE_TTL_HOURS:'abc'}),6*3600000);
+});
 test('recent-search window: when no post is under 7 days old, replies are not searched and the gap is labeled',async()=>{
  const f=counting(createMockFetch({now:NOW}));
  const later=createDeps({env,now:NOW+30*86400000,sleep,fetchImpl:f});

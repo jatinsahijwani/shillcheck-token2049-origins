@@ -15,3 +15,15 @@ Processes (run from the repo root, Node 24+, `.env` filled from `.env.example`):
 
 Hand-check without the model: `npm run report -- "@a @b budget $10k asia"`. Offline fixtures: `SHILLCHECK_MOCK=true` (the worker and API refuse to start in mock mode).
 Tests: `npm test`.
+
+## X cost and cache settings
+
+X reads cost money ($0.01 per user, $0.005 per post), so they are cached per handle and capped per report.
+
+| Setting | Testing (now) | Demo / judges | Meaning |
+|---|---|---|---|
+| `X_CACHE_TTL_HOURS` | 48 | raise as needed | How long a cached X read is served |
+| `SHILLCHECK_MAX_X_COST_USD` | 1 | raise as needed (default 8) | Estimated live X spend allowed per report; the rest is "could not verify" |
+| `X_LIVE_ALLOWED` | false | true | false = cache only; a miss is reported as "could not verify" and costs nothing |
+
+CoinGecko and DefiLlama answers are cached permanently.

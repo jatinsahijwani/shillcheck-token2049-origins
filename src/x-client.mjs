@@ -2,19 +2,20 @@ import {getJson,SourceError,createBudget} from './http.mjs';
 const BASE='https://api.x.com/2';
 const HOUR=3600*1000;
 export const X_TTL_MS=6*HOUR;
+export const ttlFromEnv=(env=process.env)=>(Number(env.X_CACHE_TTL_HOURS)>0?Number(env.X_CACHE_TTL_HOURS):6)*HOUR;
 export const normalizeHandle=input=>{
  const text=String(input??'').trim().replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i,'').replace(/^@/,'').split(/[/?#]/)[0];
  return /^[A-Za-z0-9_]{1,15}$/.test(text)?text:null;
 };
 // X API v2 with an app-only bearer. Cached per handle for 6 hours. Never returns the bearer or raw error bodies.
 // maxCostUsd bounds estimated spend per run ($0.01 per user, $0.005 per post read); cached reads cost nothing.
-export function createXClient({bearer,fetchImpl=fetch,cache,budget=createBudget({max:60,label:'X'}),sleep,now=Date.now,maxCostUsd=Infinity}){
+export function createXClient({bearer,fetchImpl=fetch,cache,budget=createBudget({max:60,label:'X'}),sleep,now=Date.now,maxCostUsd=Infinity,ttlMs=X_TTL_MS,liveAllowed=true}){
  const stats={users:0,posts:0};
  // Reserve the worst-case cost of a call before making it, so concurrent calls cannot overshoot the cap.
  let reserved=0;
- const guard=(next,label)=>{if(reserved+next>maxCostUsd+1e-9)throw new SourceError(`${label} skipped: estimated X spend cap of $${maxCostUsd} reached`,{kind:'cap'});reserved+=next};
+ const guard=(next,label)=>{if(!liveAllowed)throw new SourceError(`${label} skipped: not in cache and live X reads are disabled (X_LIVE_ALLOWED=false)`,{kind:'cap'});if(reserved+next>maxCostUsd+1e-9)throw new SourceError(`${label} skipped: estimated X spend cap of $${maxCostUsd} reached`,{kind:'cap'});reserved+=next};
  const call=(path,params,label)=>getJson({fetchImpl,budget,sleep,label,url:`${BASE}${path}?${new URLSearchParams(params)}`,headers:{authorization:`Bearer ${bearer}`}});
- const cached=async(key,load)=>{const hit=cache?.get(key,X_TTL_MS);if(hit!==undefined)return hit;return cache?cache.set(key,await load()):load()};
+ const cached=async(key,load)=>{const hit=cache?.get(key,ttlMs);if(hit!==undefined)return hit;return cache?cache.set(key,await load()):load()};
  return {
   budget,stats,
   async getUser(handle){
