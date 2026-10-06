@@ -93,7 +93,7 @@ export async function vetKols(params,{deps,dir,sessionId=null}={}){
  const notes=[];
  if(invalid.length)notes.push(`Ignored ${invalid.length} input(s) that are not valid X handles.`);
  if(dropped)notes.push(`Only the first ${RULES.maxHandles} handles were analysed; ${dropped} more were dropped.`);
- return finish({kols,constraints,notes,params:{handles:valid,invalid,dropped},mock,now,parentId:null,deps,dir,sessionId,usage:{xCalls:x.budget.used,coinGeckoCalls:cg.budget.used}});
+ return finish({kols,constraints,notes,params:{handles:valid,invalid,dropped},mock,now,parentId:null,deps,dir,sessionId,usage:{xCalls:x.budget.used,coinGeckoCalls:cg.budget.used,xUsersRead:x.stats.users,xPostsRead:x.stats.posts,estXCostUsd:Math.round((x.stats.users*0.01+x.stats.posts*0.005)*100)/100}});
 }
 function finish({kols,constraints,notes,params,mock,now,parentId,dir,sessionId,usage}){
  const decision=decide(kols,constraints);

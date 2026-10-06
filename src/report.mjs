@@ -132,3 +132,28 @@ export function renderReport(report){
  o.push(`Rules: bot-like reply = ${RULES.botSignalsNeeded}+ of: account under ${RULES.botAgeDays} days, default avatar, under ${RULES.botFollowers} followers, generic hype-only text, duplicate text. Fair price = est. real views ÷ 1000 × CPM × outcome multiplier (median 30-day change above −20%: 1.0; −20% to −50%: 0.75; −50% or lower: 0.5). Avoid: bot share ${RULES.avoidBotShare*100}% or more, or 2+ promoted tokens down more than 70% at 30 days, or median 30-day change −50% or lower with ${RULES.avoidMinPromos}+ priced promotions. Negotiate: bot share ${RULES.negotiateBotShare*100}-${RULES.avoidBotShare*100}%, engagement under ${RULES.lowEngagementRate*100}% of followers, a contract-address post without a disclosure word, median 30-day change −20% to −50%, or a quoted fee above ${RULES.negotiateFeeFactor}x fair price. Otherwise Hire. Promotion = a ticker, contract address or promo wording in an original post, major coins excluded, up to ${RULES.maxPromoCoins} coins per KOL.`);
  return o.join('\n')+'\n';
 }
+
+// Short form for follow-up comments: active constraints, re-ranked table, budget split. The paid result stays the full report.
+export function renderCompact(report){
+ const {analyses,decision,constraints}=report;
+ const by=new Map(decision.decisions.map(d=>[d.handle,d]));
+ const kol=new Map(analyses.map(k=>[k.handle,k]));
+ const b=decision.budget;
+ const active=[];
+ if(constraints.budget_usd)active.push(`budget ${usd(Number(constraints.budget_usd))}`);
+ if(constraints.max_fee_usd)active.push(`fee cap ${usd(Number(constraints.max_fee_usd))} per KOL`);
+ if(constraints.region)active.push(`region focus: ${constraints.region}`);
+ if(constraints.exclude_handles?.length)active.push(`excluded: ${constraints.exclude_handles.map(h=>'@'+h).join(', ')}`);
+ if(Number(constraints.cpm_usd)>0)active.push(`CPM $${constraints.cpm_usd}`);
+ if(Object.keys(constraints.quoted_fees??{}).length)active.push(`quoted fees: ${Object.entries(constraints.quoted_fees).map(([h,v])=>`@${h} ${usd(v)}`).join(', ')}`);
+ const o=[`**Re-ranked (report ${report.id}).** The paid result is unchanged.`,'',`**Active constraints:** ${active.length?active.join('; '):'none'}.`,'','| # | KOL | Verdict | Est. real views | Fair price (est.) | Allocation |','|---|---|---|---|---|---|'];
+ decision.ranked.forEach((h,i)=>{
+  const d=by.get(h),k=kol.get(h);
+  if(k.status!=='ok')return;
+  const alloc=!b?'n/a':b.allocations[h]>0?usd(b.allocations[h]):!['Hire','Negotiate'].includes(d.verdict.label)?'not funded (Avoid)':d.regionFit==='mismatch'?'not funded (outside region)':usd(0);
+  o.push(`| ${i+1} | ${L('@'+h,k.profile.url)} | ${d.verdict.label} | ${d.estRealViews===null?'could not verify':int(d.estRealViews)} | ${d.fair?usd(d.fair.usd):'could not verify'} | ${alloc} |`);
+ });
+ if(decision.excluded.length)o.push('','Excluded: '+decision.excluded.map(e=>`@${e.handle} (${e.reason})`).join('; ')+'.');
+ o.push('',b?`**Budget split:** ${usd(b.allocated)} of ${usd(b.total)} allocated, **${usd(b.unallocated)} unallocated** (spend is capped at fair price).`:'**Budget split:** budget not given, fair prices only.');
+ return o.join('\n')+'\n';
+}

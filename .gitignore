@@ -24,3 +24,6 @@ AGENTS.md
 
 # agent prompt is source, not tooling clutter
 !agent/instructions.md
+!README.md
+!SHILLCHECK_HANDOFF.md
+!docs/*.md

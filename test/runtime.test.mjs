@@ -107,6 +107,22 @@ test('unknown or malicious marker ids never read arbitrary files',()=>{
   assert.match(expandReportMarker('[[SHILLCHECK_REPORT:../secret]]',{dir,sessionId:'s',sinceMs:0}),/could not be loaded/);
  }finally{rmSync(dir,{recursive:true})}
 });
+test('follow-up comments get a compact reply, not the full report',async()=>{
+ const {createDeps,vetKols,rerankReport}=await import('../src/pipeline.mjs');
+ const {createMockFetch}=await import('../src/mock-fetch.mjs');
+ const dir=mkdtempSync(join(tmpdir(),'compact-'));
+ try{
+  const now=Date.parse('2026-10-06T07:00:00Z');
+  const deps=createDeps({env:{SHILLCHECK_MOCK:'true',COINGECKO_RATE_PER_MIN:'100000'},now,sleep:async()=>{},fetchImpl:createMockFetch({now})});
+  const r1=await vetKols({handles:['demo_alpha','demo_pumper','demo_ghost'],budget_usd:20000},{deps,dir,sessionId:'s'});
+  const r2=rerankReport({reportId:r1.id,update:{region:'asia',max_fee_usd:5000},dir,sessionId:'s'});
+  const compact=expandReportMarker(`[[SHILLCHECK_REPORT:${r2.id}]]`,{dir,sessionId:'s',sinceMs:0,compact:true});
+  assert.ok(compact.length<r2.markdown.length/2&&compact.length<3000,`${compact.length} vs ${r2.markdown.length}`);
+  assert.match(compact,/Active constraints:\*\* budget \$20,000; fee cap \$5,000 per KOL; region focus: asia/);
+  assert.match(compact,/\| 1 \| \[@demo_alpha\]/);assert.match(compact,/unallocated/);assert.doesNotMatch(compact,/Real reach|Promotion track record/);
+  assert.match(expandReportMarker(`[[SHILLCHECK_REPORT:${r2.id}]]`,{dir,sessionId:'s',sinceMs:0}),/Real reach/,'default stays full');
+ }finally{rmSync(dir,{recursive:true})}
+});
 test('usage guide replies (no marker, no report) pass through unchanged',()=>{
  const dir=mkdtempSync(join(tmpdir(),'marker-'));
  try{assert.equal(expandReportMarker('Send up to 10 X handles.',{dir,sessionId:'s',sinceMs:Date.now()}),'Send up to 10 X handles.')}finally{rmSync(dir,{recursive:true})}

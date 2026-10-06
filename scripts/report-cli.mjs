@@ -10,4 +10,5 @@ const now=Date.now();
 const deps=createDeps({now,fetchImpl:isMock()?createMockFetch({now}):fetch});
 const report=await vetKols(parseRequest(text),{deps,dir:dataDir()});
 console.log(report.markdown);
-console.error(`\nSaved ${dataDir()}/${report.id}.{json,md} · X calls ${report.usage.xCalls}, CoinGecko calls ${report.usage.coinGeckoCalls}`);
+const u=report.usage;console.error(`\nX reads: ${u.xUsersRead} users + ${u.xPostsRead} posts = est. $${u.estXCostUsd} (uncached; $0.01/user, $0.005/post) · runtime ${Math.round((Date.now()-now)/1000)}s`);
+console.error(`Saved ${dataDir()}/${report.id}.{json,md} · X calls ${report.usage.xCalls}, CoinGecko calls ${report.usage.coinGeckoCalls}`);
