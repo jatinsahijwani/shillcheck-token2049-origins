@@ -15,6 +15,7 @@ export async function priceOutcomes(promoRefs,{cg,llama,now}){
   if(resolved.has(key))return resolved.get(key);
   const task=(async()=>{
    try{
+    if(promo.ref.kind==='coin_id')return {status:'ok',id:promo.ref.value,symbol:promo.ref.value,name:promo.ref.value};
     if(promo.ref.kind==='cashtag')return await cg.resolveTicker(promo.ref.value);
     return await cg.resolveContract(promo.ref.kind,promo.ref.value);
    }catch(error){return {status:'error',reason:reasonOf(error)}}
