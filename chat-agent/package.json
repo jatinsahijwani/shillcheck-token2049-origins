@@ -1,1 +1,1 @@
-{"name":"shillcheck-chat-agent","private":true,"type":"module"}
+{"name":"shillcheck-chat-agent","private":true,"type":"module","dependencies":{"eve":"0.71.0"}}

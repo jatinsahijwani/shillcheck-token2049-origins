@@ -28,7 +28,7 @@ export function renderQuick(report,{askedFee=null}={}){
  let headline=`@${k.handle}: ${d.verdict.label}`,feeNote='';
  if(askedFee&&fair!==undefined){
   const ratio=askedFee/fair;
-  feeNote=ratio<=1?`${usd(askedFee)} is within the estimated fair price of ${usd(fair)}.`:ratio<=RULES.negotiateFeeFactor?`${usd(askedFee)} is ${Math.round((ratio-1)*100)}% above the estimated fair price of ${usd(fair)}. Worth negotiating down.`:`${usd(askedFee)} is ${round(ratio,1)}x the estimated fair price of ${usd(fair)}. That alone puts them at Negotiate.`;
+  feeNote=ratio<=1?`${usd(askedFee)} is within the estimated fair price of ${usd(fair)}.`:ratio<=RULES.negotiateFeeFactor?`${usd(askedFee)} is ${Math.round((ratio-1)*100)}% above the estimated fair price of ${usd(fair)}. Worth negotiating down.`:`${usd(askedFee)} is ${round(ratio,1)}x the estimated fair price of ${usd(fair)}.${d.verdict.label==='Avoid'?'':' That alone puts them at Negotiate.'}`;
   headline=d.verdict.label==='Avoid'?`Not at ${usd(askedFee)}: @${k.handle} is rated Avoid`:d.verdict.label==='Hire'&&ratio<=1?`Yes, ${usd(askedFee)} is fair for @${k.handle}`:`Only at a lower price than ${usd(askedFee)}`;
  }
  out.push(`**${headline}.**`);

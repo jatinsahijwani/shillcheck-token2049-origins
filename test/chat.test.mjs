@@ -49,6 +49,7 @@ test('quick check: Avoid, not found, invalid, and uncached handles never spend w
   const pumper=await quickCheck({handle:'demo_pumper',fee_usd:5000},'s',{env:envFor(root),fetchImpl:f,now:NOW});
   assert.equal(pumper.verdict,'Avoid');
   assert.match(expandChatMarkers(`[[SHILLCHECK_QUICK:${pumper.quick_id}:fee=5000]]`,{dir:join(root,'reports')}),/Not at \$5,000: @demo_pumper is rated Avoid/);
+  assert.doesNotMatch(expandChatMarkers(`[[SHILLCHECK_QUICK:${pumper.quick_id}:fee=5000]]`,{dir:join(root,'reports')}),/puts them at Negotiate/);
   const before=f.calls.length;
   const cold=await quickCheck({handle:'demo_ghost'},'s',{env:envFor(root),fetchImpl:f,now:NOW});
   assert.equal(f.calls.filter(u=>u.includes('api.x.com')).length,f.calls.slice(0,before).filter(u=>u.includes('api.x.com')).length,'no new X call on a miss');
