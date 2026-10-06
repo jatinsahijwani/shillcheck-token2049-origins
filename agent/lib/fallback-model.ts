@@ -5,14 +5,17 @@ const retryable = (error: any): boolean => {
   if (typeof status === 'number') return status === 429 || status >= 500;
   return true; // network / unknown errors before a response
 };
-export function createFallbackModel(models: any[]): any {
+export function createFallbackModel(models: any[], perAttemptTimeoutMs = 30000): any {
   if (models.length === 0) throw new Error('createFallbackModel needs at least one model');
   const first = models[0];
   const attempt = async (method: 'doGenerate' | 'doStream', options: any) => {
     let last: unknown;
     for (const model of models) {
       try {
-        return await model[method](options);
+        // A provider that accepts the request but never answers is treated like an overloaded one.
+        let timer: any;
+        const stalled = new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('model did not respond in time'), { statusCode: 504 })), perAttemptTimeoutMs); });
+        try { return await Promise.race([model[method](options), stalled]); } finally { clearTimeout(timer); }
       } catch (error) {
         last = error;
         if (!retryable(error) || options?.abortSignal?.aborted) throw error;

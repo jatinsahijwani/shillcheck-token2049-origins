@@ -20,3 +20,7 @@ test('throws the last error when every model fails',async()=>{
  const m=createFallbackModel([model('a',async()=>{throw err(503)}),model('b',async()=>{throw err(500)})]);
  await assert.rejects(()=>m.doStream({}),e=>e.statusCode===500);
 });
+test('a model that never answers is skipped after the per-attempt timeout',async()=>{
+ const m=createFallbackModel([model('a',()=>new Promise(()=>{})),model('b',async()=>({ok:'b'}))],40);
+ assert.deepEqual(await m.doStream({}),{ok:'b'});
+});
