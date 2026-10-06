@@ -93,7 +93,7 @@ export function createChatServer({secret,brain,limiter=createRateLimiter(),now=D
     active++;
     const timer=streaming?setInterval(()=>res.write(': keepalive\n\n'),keepaliveMs):null;
     try{answer=await Promise.race([brain(conversationKey,clipped,{userId}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),brainTimeoutMs))])}
-    catch(error){failed=true;log.error('chat brain failed',error?.message?.slice(0,120));answer=error?.message==='timeout'?'That is taking longer than expected. Please ask again in a moment, or create a Task for a full report.':'Something went wrong on my side. Please try again.'}
+    catch(error){failed=true;log.error('chat brain failed',error?.message?.slice(0,120));answer=error?.message==='timeout'?'That is taking longer than expected. Please ask again in a moment, or create a Task for a full report.':'I could not answer that one. I can check whether a KOL on X is worth paying, for example: "is @name worth $3K?"'}
     finally{active--;if(timer)clearInterval(timer)}
    }
    answer=String(answer??'').trim()||'I could not produce an answer. Please rephrase.';

@@ -53,7 +53,7 @@ test('quick check: Avoid, not found, invalid, and uncached handles never spend w
   const before=f.calls.length;
   const cold=await quickCheck({handle:'demo_ghost'},'s',{env:envFor(root),fetchImpl:f,now:NOW});
   assert.equal(f.calls.filter(u=>u.includes('api.x.com')).length,f.calls.slice(0,before).filter(u=>u.includes('api.x.com')).length,'no new X call on a miss');
-  assert.equal(cold.status,'error');
+  assert.equal(cold.status,'error');assert.equal(cold.reason_code,'not_cached');
   assert.match(expandChatMarkers(`[[SHILLCHECK_QUICK:${cold.quick_id}]]`,{dir:join(root,'reports')}),/not in my cache and live X reads are off/);
   assert.equal((await quickCheck({handle:'not a handle!!'},'s',{env:envFor(root),fetchImpl:f,now:NOW})).status,'invalid');
   const missing=await quickCheck({handle:'demo_nobody'},'s',{env:envFor(root,{CHAT_X_LIVE:'true'}),fetchImpl:f,now:NOW});
@@ -195,7 +195,7 @@ test('brain timeout and brain errors become friendly answers, never raw errors',
  const slow=await start({brain:()=>new Promise(()=>{}),opts:{brainTimeoutMs:60}});
  try{assert.match((await events(await post(slow.base,{input:input('hi'),stream:true}))).out.at(-1).data.response.output_text,/taking longer than expected/)}finally{slow.close()}
  const broken=await start({brain:async()=>{throw new Error('stack trace with secret')}});
- try{const {text}=await events(await post(broken.base,{input:input('hi'),stream:true}));assert.match(text,/Something went wrong on my side/);assert.doesNotMatch(text,/secret|stack/)}finally{broken.close()}
+ try{const {text}=await events(await post(broken.base,{input:input('hi'),stream:true}));assert.match(text,/I could not answer that one/);assert.doesNotMatch(text,/secret|stack/)}finally{broken.close()}
 });
 test('concurrency cap answers busy; late responses can be fetched by id',async()=>{
  let release;const gate=new Promise(r=>release=r);

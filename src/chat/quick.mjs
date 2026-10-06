@@ -7,7 +7,7 @@ const int=n=>Math.round(n).toLocaleString('en-US');
 export function quickFacts(report,askedFee=null){
  const k=report.analyses[0],d=report.decision.decisions[0];
  const base={report_id:report.id,handle:k.handle,status:k.status};
- if(k.status!=='ok')return {...base,verdict:'Not rated',reason:d.verdict.reason,could_not_verify:[d.verdict.reason]};
+ if(k.status!=='ok')return {...base,verdict:'Not rated',reason_code:k.status==='not_found'?'not_found':k.status==='invalid'?'invalid':/not in cache/.test(k.error??'')?'not_cached':'error',reason:d.verdict.reason,note:'Show the marker; it explains this to the user.'};
  const o=d.outcomes;
  const fair=d.fair?.usd??null;
  return {...base,verdict:d.verdict.label,reasons:d.verdict.reasons,asked_fee_usd:askedFee,fair_price_usd:fair,fee_vs_fair:askedFee&&fair?round(askedFee/fair,2):null,
