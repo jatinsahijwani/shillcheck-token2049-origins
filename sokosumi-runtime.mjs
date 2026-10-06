@@ -13,3 +13,19 @@ export async function loadSokosumiRuntime(){
  }
  return loaded;
 }
+
+// Each Task belongs to the Personal Workspace (organizationId null) or an organization such as TOKEN2049.
+// Runtime start/complete take exactly one selector, never both.
+export function workspaceArgs(task){
+ const org=task?.organizationId??task?.workspace?.organizationId??null;
+ if(org===null||org===undefined)return ['--personal'];
+ if(typeof org!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_-]{7,63}$/.test(org))throw new Error('Task has an unsupported organization id');
+ return ['--organization-id',org];
+}
+export function runtimeArgs(command,task,coworkerId,extra=[]){
+ return ['runtime',command,task.id,...workspaceArgs(task),'--coworker-id',coworkerId,...extra];
+}
+// `runtime receipt` accepts neither --personal nor --organization-id; the Task id selects the Task.
+export function runtimeReceipt(taskId,coworkerId,run=execFileSync){
+ return JSON.parse(run('sokosumi',['--preprod','runtime','receipt',taskId,'--coworker-id',coworkerId,'--json'],{encoding:'utf8',timeout:30000,maxBuffer:1024*1024}));
+}

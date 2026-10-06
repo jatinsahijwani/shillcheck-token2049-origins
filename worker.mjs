@@ -1,9 +1,11 @@
+import './src/refuse-mock.mjs';
 import {execFileSync} from 'node:child_process';
 import {existsSync,readFileSync,writeFileSync} from 'node:fs';
 import {acquireWorkerLock} from './worker-lock.mjs';
 import {answer,client} from './client.mjs';
 import {reply} from './comments.mjs';
 import {createPaidAdapter,isPaidReady} from './paid-task.mjs';
+import {runtimeArgs} from './sokosumi-runtime.mjs';
 const id=process.env.COWORKER_ID;
 const releaseLock=acquireWorkerLock();
 process.once('exit',releaseLock);
@@ -19,7 +21,7 @@ while(true){
  try{
  const journal=`.local/${t.id}.json`,resultFile=`.local/${t.id}.txt`;
  let state=existsSync(journal)?JSON.parse(readFileSync(journal,'utf8')):{};
- if(t.status==='READY'&&!state.phase){writeFileSync(journal,JSON.stringify({phase:'starting'}),{mode:0o600});const started=cli(['runtime','start',t.id,'--personal','--coworker-id',id]);state={phase:'started',input:started.description};writeFileSync(journal,JSON.stringify(state),{mode:0o600});}
+ if(t.status==='READY'&&!state.phase){writeFileSync(journal,JSON.stringify({phase:'starting'}),{mode:0o600});const started=cli(runtimeArgs('start',t,id));state={phase:'started',input:started.description};writeFileSync(journal,JSON.stringify(state),{mode:0o600});}
  if(state.paid&&process.env.PAID_TASKS_ENABLED!=='true')continue;
  if(state.paid||(state.phase==='started'&&process.env.PAID_TASKS_ENABLED==='true'&&isPaidReady())){state=await paid.advance(t,state);if(state.phase==='completed')await reply(t.id);continue;}
  if(state.phase==='started'){
@@ -29,7 +31,7 @@ while(true){
  }
  if(state.phase==='result-saved'){
  writeFileSync(journal,JSON.stringify({...state,phase:'complete-pending'}),{mode:0o600});
- const completed=cli(['runtime','complete',t.id,'--personal','--coworker-id',id,'--result-file',resultFile]);
+ const completed=cli(runtimeArgs('complete',t,id,['--result-file',resultFile]));
  writeFileSync(journal,JSON.stringify({...state,phase:'completed',completion:completed}),{mode:0o600});console.log('Completed',t.id);
  }
  if(state.phase==='completed')await reply(t.id);

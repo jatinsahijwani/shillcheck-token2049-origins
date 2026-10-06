@@ -1,19 +1,21 @@
+import './src/refuse-mock.mjs';
 import {createServer} from 'node:http';
 import {randomUUID} from 'node:crypto';
 import {existsSync,readFileSync,writeFileSync,mkdirSync,readdirSync} from 'node:fs';
 import {answer,client} from './client.mjs';
 import {inputHash,resultHash,sha256} from './standard-hash.mjs';
 import {confirmedState} from './paid-task.mjs';
+import {loadRegistration} from './src/registration.mjs';
 const jobsDir='.local/standard-jobs';mkdirSync(jobsDir,{recursive:true,mode:0o700});
 const token=process.env.MPS_RUNTIME_TOKEN;
-const registry=()=>JSON.parse(readFileSync('docs/registration-state.json','utf8'));
+const registry=loadRegistration;
 const save=job=>writeFileSync(`${jobsDir}/${job.id}.json`,JSON.stringify(job),{mode:0o600});
 const load=id=>JSON.parse(readFileSync(`${jobsDir}/${id}.json`,'utf8'));
 export async function mps(path,body){
  const response=await fetch(process.env.MPS_URL+'/api/v1'+path,{method:body?'POST':'GET',headers:{token,'content-type':'application/json'},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(30000)});
  const data=await response.json();if(!response.ok)throw new Error(`Payment service HTTP ${response.status}`);return data.data;
 }
-const schema={input_data:[{id:'prompt',type:'string',name:'Team brief',data:{description:'Describe your hackathon project and preferred name style.'},validations:[{validation:'min',value:'1'},{validation:'max',value:'16000'}]}]};
+const schema={input_data:[{id:'prompt',type:'string',name:'KOL list and campaign',data:{description:'Up to 10 X handles (for example @alice @bob), plus optional total budget in USD, campaign goal, niche or chain, and region. Example: "@alice @bob @carol budget $20k, Asia DeFi launch". Returns a Hire / Negotiate / Avoid report with real vs bot reach, past token-promo price outcomes, fair price and a budget split.'},validations:[{validation:'min',value:'1'},{validation:'max',value:'16000'}]}]};
 const respond=(res,status,data)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(data))};
 const port=Number(process.env.AGENT_API_PORT||21950);
 createServer(async(req,res)=>{

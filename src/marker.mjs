@@ -1,5 +1,5 @@
 import {loadReport,reportsSince,REPORT_ID_RE} from './store.mjs';
-export const MARKER_RE=/\[\[SHILLCHECK_REPORT:([A-Za-z0-9_-]+)\]\]/g;
+export const MARKER_RE=/\[\[SHILLCHECK_REPORT:([^\]\s]+)\]\]/g;
 // Replace [[SHILLCHECK_REPORT:<id>]] with the stored markdown. This runs before the result is saved or hashed,
 // so the paid bytes are final. If the model forgot the marker and exactly one report was created during this call, append it.
 export function expandReportMarker(message,{dir,sessionId,sinceMs}){

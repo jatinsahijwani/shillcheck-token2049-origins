@@ -3,7 +3,7 @@ const BASE='https://api.x.com/2';
 const HOUR=3600*1000;
 export const X_TTL_MS=6*HOUR;
 export const normalizeHandle=input=>{
- const text=String(input??'').trim().replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i,'').replace(/^@/,'').split(/[/?#\s]/)[0];
+ const text=String(input??'').trim().replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i,'').replace(/^@/,'').split(/[/?#]/)[0];
  return /^[A-Za-z0-9_]{1,15}$/.test(text)?text:null;
 };
 // X API v2 with an app-only bearer. Cached per handle for 6 hours. Never returns the bearer or raw error bodies.

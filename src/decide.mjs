@@ -38,6 +38,7 @@ export function decide(kols,constraints){
   const total=Number(constraints.budget_usd);
   const candidates=active.filter(d=>['Hire','Negotiate'].includes(d.verdict.label)&&d.fair&&d.regionFit!=='mismatch').map(d=>({handle:d.handle,verdict:d.verdict.label,weight:d.fair.usd,cap:Math.min(d.fair.usd,maxFee??Infinity)}));
   const split=splitBudget({budget:total,candidates});
+  for(const d of active)split.allocations[d.handle]??=0;
   budget={total,cpm,maxFee,...split,allocated:round(total-split.unallocated)};
  }
  return {cpm,maxFee,decisions,ranked:ranked.map(d=>d.handle),excluded:decisions.filter(d=>d.excluded).map(d=>({handle:d.handle,reason:d.excluded})),budget};
