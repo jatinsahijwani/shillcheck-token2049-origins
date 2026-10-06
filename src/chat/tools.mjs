@@ -47,7 +47,7 @@ export function planTask(input,{env=process.env}={}){
  if(input.goal)parts.push(`for ${String(input.goal).slice(0,120)}`);
  const tail=[];
  if(Number(input.budget_usd)>0)tail.push(`Budget $${Math.round(Number(input.budget_usd)).toLocaleString('en-US')}`);
- if(input.region)tail.push(String(input.region).slice(0,40));
+ if(input.region&&!String(input.goal??'').toLowerCase().includes(String(input.region).toLowerCase()))tail.push(String(input.region).slice(0,40));
  const task_text=`${parts.join(' ')}.${tail.length?` ${tail.join(', ')}.`:''}`;
  return {task_text,handles:valid,invalid_inputs:invalid,dropped_beyond_limit:dropped,cached_handles:cached,uncached_handles:uncached,
   live_x_enabled:env.X_LIVE_ALLOWED==='true',est_live_cost_usd_if_uncached:Math.round(uncached.length*0.7*100)/100,max_handles_per_task:RULES.maxHandles,

@@ -88,6 +88,7 @@ test('plan task: ready-to-paste text, cached vs uncached, cost note',async()=>{
   assert.equal(plan.task_text,'Vet @demo_alpha @demo_pumper @demo_ghost for a DeFi launch. Budget $10,000, Asia.');
   assert.deepEqual(plan.cached_handles,['demo_alpha']);assert.deepEqual(plan.uncached_handles,['demo_pumper','demo_ghost']);
   assert.equal(plan.invalid_inputs.length,1);assert.equal(plan.est_live_cost_usd_if_uncached,1.4);assert.equal(plan.how_to.length,3);
+  assert.equal(planTask({handles:['a1'],goal:'our Asia launch',region:'asia'},{env:envFor(root)}).task_text,'Vet @a1 for our Asia launch.','region already in the goal is not repeated');
   assert.equal(planTask({handles:Array.from({length:12},(_,i)=>`h${i}`)},{env:envFor(root)}).dropped_beyond_limit,2);
  }finally{rmSync(root,{recursive:true})}
 });
