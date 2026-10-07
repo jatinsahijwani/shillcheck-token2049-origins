@@ -29,3 +29,6 @@ export const RULES={
  recentSearchDays:7,pendingDays:30,maxHistoryDays:365,
 };
 export const MAJORS=new Set(['BTC','ETH','SOL','BNB','XRP','ADA','DOGE','USDT','USDC','DAI','TRX','TON','AVAX','DOT','LINK','MATIC','POL','LTC','BCH','SHIB','XLM','ATOM','NEAR','WBTC','WETH','STETH']);
+// Limit for one model turn. With PriceProof on, vet_kols holds the turn while it waits for the sub-purchase, so the limit
+// must exceed that wait (otherwise the worker abandons the turn and retries it while the first one is still buying).
+export const turnTimeoutMs=(env=process.env)=>Number(env.MODEL_TURN_TIMEOUT_MS)||(env.PRICEPROOF_ENABLED==='true'?(Number(env.PRICEPROOF_TIMEOUT_MS)||420000)+120000:150000);

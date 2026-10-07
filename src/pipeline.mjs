@@ -12,9 +12,9 @@ import {priceWithPriceProof} from './priceproof-integration.mjs';
 import {decide,mergeConstraints} from './decide.mjs';
 import {renderReport} from './report.mjs';
 import {saveReport,loadReport} from './store.mjs';
-import {cacheDir,repoRoot,ledgerPath} from './config.mjs';
+import {cacheDir,dataDir,ledgerPath} from './config.mjs';
 import {createLedger} from './spend-ledger.mjs';
-import {join} from 'node:path';
+import {join,dirname} from 'node:path';
 const DAY_MS=86400000;
 export function cleanHandles(raw){
  const seen=new Set(),valid=[],invalid=[];
@@ -142,5 +142,5 @@ export function priceProofFromEnv(env,fetchImpl=fetch){
   if(!response.ok)throw new Error(`Payment service HTTP ${response.status}`);
   return data.data;
  };
- return {config:{url:env.PRICEPROOF_URL||'http://127.0.0.1:21960',agentIdentifier:env.PRICEPROOF_AGENT_IDENTIFIER,maxPriceAtomic:env.PRICEPROOF_MAX_PRICE_ATOMIC||'500000',timeoutMs:Number(env.PRICEPROOF_TIMEOUT_MS)||420000,journalDir:join(repoRoot,'.local','priceproof-purchases')},deps:{mps,fetchImpl}};
+ return {config:{url:env.PRICEPROOF_URL||'http://127.0.0.1:21960',agentIdentifier:env.PRICEPROOF_AGENT_IDENTIFIER,maxPriceAtomic:env.PRICEPROOF_MAX_PRICE_ATOMIC||'500000',timeoutMs:Number(env.PRICEPROOF_TIMEOUT_MS)||420000,journalDir:join(dirname(dataDir(env)),'priceproof-purchases')},deps:{mps,fetchImpl}};
 }

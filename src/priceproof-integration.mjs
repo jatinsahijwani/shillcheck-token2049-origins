@@ -33,7 +33,7 @@ export async function priceWithPriceProof(refs,{cg,llama,now,pp,deadline}){
   else{
    try{
     const bought=await buyPriceProof({lookups:sent.map(s=>s.body),config:{...pp.config,timeoutMs},deps:pp.deps});
-    rows=bought.rows;info.used=true;info.evidence=bought.evidence;
+    rows=bought.rows;info.used=true;info.evidence=bought.evidence;if(bought.reused)info.reused=true;
    }catch(error){Object.assign(info,{reason:error.kind?`${error.kind} at ${error.stage}: ${error.message}`:'unexpected error',kind:error.kind??'error'})}
   }
  }

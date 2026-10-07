@@ -73,7 +73,7 @@ const txLink=h=>h?L(short(h),`https://preprod.cardanoscan.io/transaction/${h}`):
 function priceProofLine(pp){
  if(!pp.used)return `**Price data:** computed locally (PriceProof not used: ${pp.reason??'no purchasable lookups'}).`;
  const e=pp.evidence;
- return `**Verified by PriceProof** (agent \`${short(e.agentIdentifier)}\`): ${pp.lookups} price lookups bought on chain for ${(Number(e.amountAtomic)/1e6).toFixed(2)} tUSDM. Purchase \`${short(e.blockchainIdentifier)}\` · escrow tx ${txLink(e.escrowTx)} · result tx ${txLink(e.resultTx)} · the result hash matched the on-chain commitment before use.${pp.local?` ${pp.local} lookup(s) computed locally.`:''}`;
+ return `**Verified by PriceProof** (agent \`${short(e.agentIdentifier)}\`): ${pp.lookups} price lookups bought on chain for ${(Number(e.amountAtomic)/1e6).toFixed(2)} tUSDM. Purchase \`${short(e.blockchainIdentifier)}\` · escrow tx ${txLink(e.escrowTx)} · result tx ${txLink(e.resultTx)} · the result hash matched the on-chain commitment before use.${pp.reused?' Reused from an identical purchase made minutes earlier for this Task.':''}${pp.local?` ${pp.local} lookup(s) computed locally.`:''}`;
 }
 export function renderReport(report){
  const {analyses,decision,constraints}=report;

@@ -1,7 +1,7 @@
 import {randomBytes,randomUUID} from 'node:crypto';
-import {mkdirSync,writeFileSync} from 'node:fs';
+import {mkdirSync,writeFileSync,readdirSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
-import {inputHashFor,resultHash} from '../standard-hash.mjs';
+import {inputHashFor,resultHash,sha256,canonicalJson} from '../standard-hash.mjs';
 import {confirmedState,USDM} from '../paid-task.mjs';
 const SOURCE_HOSTS=new Set(['www.coingecko.com','coins.llama.fi','defillama.com']);
 const STATUSES=new Set(['ok','pending','unverified','out_of_range']);
@@ -21,6 +21,21 @@ export function parseResult(raw,count){
   return {index:i,status:r.status,p0:num(r.price_at),p7:num(r.price_7d),p30:num(r.price_30d),pct7:num(r.pct_7d),pct30:num(r.pct_30d),source:r.source==='defillama'?'defillama':'coingecko',coinId:text(r.coin_id,100),reason:text(r.reason,200),sources};
  });
 }
+const TERMINAL=new Set(['result-verified','timed-out','hash-mismatch','terms-rejected','start-job-rejected','start-job-uncertain','purchase-uncertain']);
+const REUSE_MS=30*60000,IN_PROGRESS_MS=10*60000;
+// A retried model turn (or a second report with the same promos) must not buy the same lookups again.
+// Verified result within 30 minutes: reuse it. A purchase for these exact lookups still in flight: do not start another.
+export function findEarlier(journalDir,lookupsHash,now){
+ let names=[];try{names=readdirSync(journalDir)}catch{return null}
+ let inflight=false;
+ for(const name of names.filter(n=>n.endsWith('.json'))){
+  let j;try{j=JSON.parse(readFileSync(`${journalDir}/${name}`,'utf8'))}catch{continue}
+  if(j.lookupsHash!==lookupsHash)continue;
+  if(j.stage==='result-verified'&&j.rows&&j.evidence&&now-j.updatedAt<REUSE_MS)return {reuse:{rows:j.rows,evidence:j.evidence}};
+  if(!TERMINAL.has(j.stage)&&now-j.updatedAt<IN_PROGRESS_MS)inflight=true;
+ }
+ return inflight?{inflight:true}:null;
+}
 // Hires PriceProof once: start_job at the seller, purchase from the MPS purchasing wallet, wait for escrow and the result,
 // verify the on-chain result hash, then return sanitized rows. Every stage is journaled before and after its write.
 // A write whose outcome is unknown halts with kind "uncertain" and is never retried.
@@ -35,7 +50,11 @@ export async function buyPriceProof({lookups,config,deps}){
  const nonce=randomBytes(10).toString('hex');
  const inputData={lookups:JSON.stringify(lookups)};
  const inputHash=inputHashFor(inputData,nonce);
- write({stage:'start-job-pending',nonce,inputHash,count:lookups.length});
+ const lookupsHash=sha256(canonicalJson(lookups));
+ const earlier=findEarlier(journalDir,lookupsHash,now());
+ if(earlier?.reuse)return {...earlier.reuse,reused:true};
+ if(earlier?.inflight)throw new PriceProofError('a purchase for these exact lookups is already in progress',{stage:'dedupe',kind:'in-progress'});
+ write({stage:'start-job-pending',nonce,inputHash,count:lookups.length,lookupsHash});
  let job;
  try{
   const res=await fetchImpl(`${url}/start_job`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({identifier_from_purchaser:nonce,input_data:inputData}),redirect:'error',signal:AbortSignal.timeout(20000)});
@@ -79,7 +98,7 @@ export async function buyPriceProof({lookups,config,deps}){
   if(resultHash(status.result,nonce)!==state.resultHash){write({stage:'hash-mismatch'});throw new PriceProofError('result hash does not match the on-chain commitment',{stage:'verify',kind:'hash-mismatch'})}
   const rows=parseResult(status.result,lookups.length);
   const evidence={agentIdentifier,blockchainIdentifier:job.blockchainIdentifier,escrowTx,resultTx:submitted?.txHash??null,amountAtomic:amount.toString(),resultHash:state.resultHash,purchaseId:purchase?.id??null,journalId:id};
-  write({stage:'result-verified',evidence});
+  write({stage:'result-verified',evidence,rows});
   return {rows,evidence};
  }
  write({stage:'timed-out',lastPollError});

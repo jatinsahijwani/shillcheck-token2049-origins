@@ -8,6 +8,8 @@ import {createMockFetch} from '../src/mock-fetch.mjs';
 import {computePriceProof,parseLookups,validate,MAX_LOOKUPS} from '../priceproof/compute.mjs';
 import {resultHash} from '../standard-hash.mjs';
 import {DEFAULT_WINDOWS} from '../src/standard-api.mjs';
+import {turnTimeoutMs} from '../src/config.mjs';
+import {mkdirSync,writeFileSync as wf} from 'node:fs';
 import {AGENT,createFakeMps,fakeRows,startSeller,tmp,USDM} from './helpers/priceproof-harness.mjs';
 const NOW=Date.parse('2026-10-06T07:00:00Z');
 const noSleep=async()=>{};
@@ -191,4 +193,49 @@ test('not enough time left in the run: no purchase is started',async()=>{
 test('default payment windows satisfy the MPS rules: result deadline 15+ minutes ahead, dispute unlock 15+ minutes after unlock',()=>{
  const w=DEFAULT_WINDOWS;
  assert.ok(w.submit>=15);assert.ok(w.dispute-w.unlock>=15);assert.ok(w.unlock>w.submit);assert.ok(w.submit>w.pay);
+});
+
+test('a retried turn reuses a verified purchase for the same lookups instead of buying again',async()=>{
+ const f=createFakeMps();
+ const seller=await startSeller({mps:f.mps,execute:async d=>fakeRows(JSON.parse(d.lookups).length)});
+ let clock=Date.now();const journalDir=tmp();
+ const lookups=[{coin_id:'bitcoin',date:'2026-01-01'}];
+ const deps={mps:f.mps,fetchImpl:fetch,now:()=>clock,sleep:async ms=>{clock+=ms;await seller.api.tick()}};
+ const config={url:seller.url,agentIdentifier:AGENT,maxPriceAtomic:'500000',timeoutMs:60000,pollMs:5000,journalDir};
+ try{
+  const first=await buyPriceProof({lookups,config,deps});
+  const second=await buyPriceProof({lookups,config,deps});
+  assert.equal(second.reused,true);assert.deepEqual(second.rows,first.rows);assert.equal(second.evidence.blockchainIdentifier,first.evidence.blockchainIdentifier);
+  assert.equal(f.calls.filter(c=>c==='/purchase').length,1,'one purchase only');
+  const other=await buyPriceProof({lookups:[{coin_id:'ethereum',date:'2026-01-01'}],config,deps});
+  assert.equal(other.reused,undefined);assert.equal(f.calls.filter(c=>c==='/purchase').length,2,'different lookups are a different purchase');
+ }finally{seller.close()}
+});
+test('a purchase for the same lookups that is still in flight is not duplicated; a stale one is ignored',async()=>{
+ const f=createFakeMps();
+ const seller=await startSeller({mps:f.mps,execute:async d=>fakeRows(JSON.parse(d.lookups).length)});
+ const journalDir=tmp();mkdirSync(journalDir,{recursive:true});
+ const lookups=[{coin_id:'bitcoin',date:'2026-01-01'}];
+ const {sha256,canonicalJson}=await import('../standard-hash.mjs');
+ const hash=sha256(canonicalJson(lookups));
+ wf(join(journalDir,'a.json'),JSON.stringify({stage:'awaiting-escrow',lookupsHash:hash,updatedAt:Date.now()-60000}));
+ let clock=Date.now();
+ const deps={mps:f.mps,fetchImpl:fetch,now:()=>clock,sleep:async ms=>{clock+=ms;await seller.api.tick()}};
+ const config={url:seller.url,agentIdentifier:AGENT,maxPriceAtomic:'500000',timeoutMs:60000,pollMs:5000,journalDir};
+ try{
+  await assert.rejects(()=>buyPriceProof({lookups,config,deps}),e=>e.kind==='in-progress');
+  assert.equal(f.calls.filter(c=>c==='/purchase').length,0);
+  wf(join(journalDir,'a.json'),JSON.stringify({stage:'awaiting-escrow',lookupsHash:hash,updatedAt:Date.now()-3600000}));
+  assert.ok((await buyPriceProof({lookups,config,deps})).rows,'an old abandoned journal does not block');
+ }finally{seller.close()}
+});
+test('model turn limit covers the PriceProof wait when the flag is on',()=>{
+ assert.equal(turnTimeoutMs({}),150000);
+ assert.equal(turnTimeoutMs({PRICEPROOF_ENABLED:'true'}),540000);
+ assert.equal(turnTimeoutMs({PRICEPROOF_ENABLED:'true',PRICEPROOF_TIMEOUT_MS:'360000'}),480000);
+ assert.equal(turnTimeoutMs({MODEL_TURN_TIMEOUT_MS:'1000'}),1000);
+});
+test('purchase journals are stored next to the data dir from the environment, not next to the compiled code',()=>{
+ const p=priceProofFromEnv({PRICEPROOF_ENABLED:'true',PRICEPROOF_PURCHASE_TOKEN:'t',PRICEPROOF_AGENT_IDENTIFIER:'a',MPS_URL:'http://127.0.0.1:38127',SHILLCHECK_DATA_DIR:'/srv/app/.local/reports'});
+ assert.equal(p.config.journalDir,'/srv/app/.local/priceproof-purchases');
 });

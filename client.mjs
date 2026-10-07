@@ -1,8 +1,8 @@
 import { Client } from 'eve/client';
 import { writeFileSync } from 'node:fs';
 import { expandReportMarker } from './src/marker.mjs';
-import { dataDir } from './src/config.mjs';
-const MODEL_TURN_TIMEOUT_MS=Number(process.env.MODEL_TURN_TIMEOUT_MS)||150000;
+import { dataDir, turnTimeoutMs } from './src/config.mjs';
+const MODEL_TURN_TIMEOUT_MS=turnTimeoutMs();
 export const client=new Client({host:process.env.EVE_URL});
 export async function answer(input,journal,deadline) {
  if(typeof input!=='string'||!input.trim()||input.length>16000) throw new Error('Input must contain 1 to 16000 characters');
