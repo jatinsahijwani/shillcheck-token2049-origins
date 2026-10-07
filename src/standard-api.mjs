@@ -5,8 +5,9 @@ import {join} from 'node:path';
 import {inputHashFor,resultHash,sha256} from '../standard-hash.mjs';
 import {confirmedState,USDM} from '../paid-task.mjs';
 const MIN=60000;
-// MPS rejects a payment unless the external dispute unlock is at least 15 minutes after the unlock time (found against the real MPS).
-export const DEFAULT_WINDOWS={pay:5,submit:10,unlock:26,dispute:42};
+// MPS rules found against the real service: the result deadline must be at least 15 minutes ahead, and the external dispute
+// unlock at least 15 minutes after the unlock time. These are the same windows agent-api.mjs uses.
+export const DEFAULT_WINDOWS={pay:10,submit:20,unlock:36,dispute:52};
 const NONCE_RE=/^[a-fA-F0-9]{14,26}$/;
 const JOB_RE=/^[0-9a-f-]{36}$/;
 // Parametrised MIP-004 Standard API (availability, input_schema, start_job, status) with the same payment, escrow and

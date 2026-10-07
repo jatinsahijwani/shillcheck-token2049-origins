@@ -188,7 +188,7 @@ test('not enough time left in the run: no purchase is started',async()=>{
  const pp=await pipeline({timeoutMs:20000});
  assert.equal(pp.f.calls.filter(c=>c==='/purchase').length,0);assert.match(pp.report.priceProof.reason,/not enough time/);
 });
-test('default payment windows satisfy the MPS rule: dispute unlock at least 15 minutes after unlock, unlock after the result deadline',()=>{
+test('default payment windows satisfy the MPS rules: result deadline 15+ minutes ahead, dispute unlock 15+ minutes after unlock',()=>{
  const w=DEFAULT_WINDOWS;
- assert.ok(w.dispute-w.unlock>=15);assert.ok(w.unlock>w.submit);assert.ok(w.submit>w.pay);
+ assert.ok(w.submit>=15);assert.ok(w.dispute-w.unlock>=15);assert.ok(w.unlock>w.submit);assert.ok(w.submit>w.pay);
 });
