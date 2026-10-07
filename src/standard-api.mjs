@@ -5,12 +5,14 @@ import {join} from 'node:path';
 import {inputHashFor,resultHash,sha256} from '../standard-hash.mjs';
 import {confirmedState,USDM} from '../paid-task.mjs';
 const MIN=60000;
+// MPS rejects a payment unless the external dispute unlock is at least 15 minutes after the unlock time (found against the real MPS).
+export const DEFAULT_WINDOWS={pay:5,submit:10,unlock:26,dispute:42};
 const NONCE_RE=/^[a-fA-F0-9]{14,26}$/;
 const JOB_RE=/^[0-9a-f-]{36}$/;
 // Parametrised MIP-004 Standard API (availability, input_schema, start_job, status) with the same payment, escrow and
 // hash handling as agent-api.mjs. agent-api.mjs is left untouched so ShillCheck's own paid path behaves exactly as in v1.
 // Uncertain writes are never retried: every write is preceded by a *-pending phase that the poll loop never replays.
-export function createStandardApi({name,jobsDir,schema,validate,execute,registration,mps,priceAtomic='250000',windows={pay:5,submit:10,unlock:20,dispute:30},now=()=>Date.now(),maxBody=20000,minMarginMs=60000,log=console}){
+export function createStandardApi({name,jobsDir,schema,validate,execute,registration,mps,priceAtomic='250000',windows=DEFAULT_WINDOWS,now=()=>Date.now(),maxBody=20000,minMarginMs=60000,log=console}){
  mkdirSync(jobsDir,{recursive:true,mode:0o700});
  const fields=schema.input_data.map(f=>f.id);
  const save=job=>writeFileSync(join(jobsDir,`${job.id}.json`),JSON.stringify(job),{mode:0o600});

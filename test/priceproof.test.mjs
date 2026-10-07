@@ -7,6 +7,7 @@ import {createDeps,vetKols,priceProofFromEnv} from '../src/pipeline.mjs';
 import {createMockFetch} from '../src/mock-fetch.mjs';
 import {computePriceProof,parseLookups,validate,MAX_LOOKUPS} from '../priceproof/compute.mjs';
 import {resultHash} from '../standard-hash.mjs';
+import {DEFAULT_WINDOWS} from '../src/standard-api.mjs';
 import {AGENT,createFakeMps,fakeRows,startSeller,tmp,USDM} from './helpers/priceproof-harness.mjs';
 const NOW=Date.parse('2026-10-06T07:00:00Z');
 const noSleep=async()=>{};
@@ -186,4 +187,8 @@ for(const [name,fake,kind] of [['sub-agent timeout',{neverLock:true},'timeout'],
 test('not enough time left in the run: no purchase is started',async()=>{
  const pp=await pipeline({timeoutMs:20000});
  assert.equal(pp.f.calls.filter(c=>c==='/purchase').length,0);assert.match(pp.report.priceProof.reason,/not enough time/);
+});
+test('default payment windows satisfy the MPS rule: dispute unlock at least 15 minutes after unlock, unlock after the result deadline',()=>{
+ const w=DEFAULT_WINDOWS;
+ assert.ok(w.dispute-w.unlock>=15);assert.ok(w.unlock>w.submit);assert.ok(w.submit>w.pay);
 });
