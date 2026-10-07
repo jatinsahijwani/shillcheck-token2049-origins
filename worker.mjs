@@ -3,7 +3,9 @@ import {execFileSync} from 'node:child_process';
 import {existsSync,readFileSync,writeFileSync} from 'node:fs';
 import {acquireWorkerLock} from './worker-lock.mjs';
 import {answer,client} from './client.mjs';
-import {reply} from './comments.mjs';
+import {reply,postComment} from './comments.mjs';
+import {postOnce,ackText,receiptText,handlesIn} from './src/notices.mjs';
+import {planTask} from './src/chat/tools.mjs';
 import {createPaidAdapter,isPaidReady} from './paid-task.mjs';
 import {runtimeArgs,loadSokosumiRuntime} from './sokosumi-runtime.mjs';
 import {runtimeCliAuth,usesKeyFile,readCoworkerKey} from './src/coworker-key.mjs';
@@ -35,6 +37,16 @@ while(true){
  const journal=`.local/${t.id}.json`,resultFile=`.local/${t.id}.txt`;
  let state=existsSync(journal)?JSON.parse(readFileSync(journal,'utf8')):{};
  if(t.status==='READY'&&!state.phase){writeFileSync(journal,JSON.stringify({phase:'starting'}),{mode:0o600});const started=cli(runtimeArgs('start',t,id));state={phase:'started',input:started.description};writeFileSync(journal,JSON.stringify(state),{mode:0o600});}
+ // Two separate comments, neither touches the result or its hash: an immediate acknowledgement and, after settlement, a receipt.
+ // Only for Tasks that just arrived: never acknowledge an old Task that is being resumed or has been abandoned.
+ if(state.phase==='started'&&!state.ack&&Date.now()-Date.parse(t.createdAt)<15*60000){
+ await postOnce({journalPath:journal,flag:'ack',post:text=>postComment(t.id,text),build:j=>ackText({input:j.input,paid:process.env.PAID_TASKS_ENABLED==='true'&&isPaidReady(),uncached:planTask({handles:handlesIn(j.input)}).uncached_handles,priceProof:process.env.PRICEPROOF_ENABLED==='true'})});
+ state=JSON.parse(readFileSync(journal,'utf8'));
+ }
+ if(state.paid?.stage==='settled'&&state.paid.settlement?.verified&&!state.receipt){
+ await postOnce({journalPath:journal,flag:'receipt',post:text=>postComment(t.id,text),build:receiptText});
+ state=JSON.parse(readFileSync(journal,'utf8'));
+ }
  if(state.paid&&process.env.PAID_TASKS_ENABLED!=='true')continue;
  if(state.paid||(state.phase==='started'&&process.env.PAID_TASKS_ENABLED==='true'&&isPaidReady())){state=await paid.advance(t,state);if(state.phase==='completed')await reply(t.id);continue;}
  if(state.phase==='started'){

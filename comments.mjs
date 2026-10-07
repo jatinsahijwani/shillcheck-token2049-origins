@@ -6,6 +6,8 @@ import {expandReportMarker} from './src/marker.mjs';
 import {dataDir} from './src/config.mjs';
 const {createCoworkerHttpClient,fetchTaskEvents,createTaskEvent}=await loadSokosumiRuntime();
 const runtime=createCoworkerHttpClient({apiKey:await readCoworkerKey(process.env.COWORKER_ID)});
+// Plain comment from the Coworker (no status change, no payment fields).
+export const postComment=(taskId,comment)=>createTaskEvent(runtime,taskId,{comment},AbortSignal.timeout(30000));
 export async function reply(taskId){
  const p=`.local/${taskId}-comments.json`;
  const state=existsSync(p)?JSON.parse(readFileSync(p,'utf8')):{};
