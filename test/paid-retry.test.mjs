@@ -1,6 +1,8 @@
 import {test} from 'node:test';
+import {mkdirSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {createPaidAdapter,taskHash,USDM} from '../paid-task.mjs';
+mkdirSync('.local',{recursive:true,mode:0o700}); // the adapter saves the result file under .local
 const registration={walletId:'w',agentIdentifier:'a'.repeat(80),supportedPaymentSourceIndex:0};
 const locked=(submit)=>({sellerReturnAddress:null,PaymentSource:{network:'Preprod',paymentSourceType:'Web3CardanoV2'},SmartContractWallet:{id:'w',walletVkey:'b'.repeat(56)},RequestedFunds:[{amount:'1000000',unit:USDM}],blockchainIdentifier:'bid',submitResultTime:String(submit),onChainState:'FundsLocked',CurrentTransaction:{status:'Confirmed',newOnChainState:'FundsLocked'}});
 const run=async({answer,submit})=>{
