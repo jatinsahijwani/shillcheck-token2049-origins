@@ -105,15 +105,15 @@ The Masumi Payment Service, wallets, registration and the Sokosumi Coworker setu
 
 ## X cost and cache settings
 
-X reads cost money ($0.01 per user, $0.005 per post), so reads are cached per handle and capped.
+X reads cost money ($0.01 per user, $0.005 per post), so reads are cached per handle and capped. Per handle ShillCheck reads the latest 30 original posts and, only for the 2 most recent promo posts from the last 7 days, 15 replies each: at most about **$0.31 per handle** ($0.16 when there is no recent promo post).
 
 | Setting | Judge / demo value | Meaning |
 |---|---|---|
-| `X_CACHE_TTL_HOURS` | 120 | How long a cached X read is served |
+| `X_CACHE_TTL_HOURS` | 48 | How long a cached X read is served (pre-warmed so it stays valid through the 8 Oct ceremony) |
 | `X_LIVE_ALLOWED` | true (Tasks) | false = cache only; a miss is "could not verify" and costs nothing |
 | `SHILLCHECK_MAX_X_COST_USD` | 6 | Estimated live X spend allowed per report |
-| `X_DAILY_CAP_USD` | 25 | Estimated live X spend per UTC day across all Tasks and chats (shared ledger); past it only cached data is served |
-| `CHAT_X_LIVE` / `CHAT_X_DAILY_USD` | false / 5 | Chat is cache-only; if enabled, live reads stop at this daily amount |
+| `X_DAILY_CAP_USD` | 15 | Estimated live X spend per UTC day across all Tasks and chats (shared ledger); past it only cached data is served |
+| `CHAT_X_LIVE` / `CHAT_X_DAILY_USD` | false / 3 | Chat is cache-only; if enabled, live reads stop at this daily amount |
 
 CoinGecko and DefiLlama answers are cached permanently.
 

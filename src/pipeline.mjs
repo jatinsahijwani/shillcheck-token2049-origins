@@ -5,7 +5,7 @@ import {createBudget} from './http.mjs';
 import {createXClient,normalizeHandle,ttlFromEnv} from './x-client.mjs';
 import {createCoinGecko} from './coingecko.mjs';
 import {createDefiLlama} from './defillama.mjs';
-import {detectPromos,postUrl} from './promo.mjs';
+import {detectPromos,extractRefs,postUrl} from './promo.mjs';
 import {postStats,replyQuality} from './analysis.mjs';
 import {priceOutcomes} from './prices.mjs';
 import {priceWithPriceProof} from './priceproof-integration.mjs';
@@ -46,19 +46,21 @@ async function collectKol(handle,{x,now,deadline}){
  let tweets=[];
  try{tweets=await x.getTweets(user.id)}catch(error){kol.status='error';kol.error=`posts: ${error.message}`;return kol}
  if(!tweets.length){kol.status='error';kol.error='no original posts returned';return kol}
+ // Analyse the latest RULES.postsRead original posts only, whether the read was fresh or served from an older, larger cache entry.
+ tweets=[...tweets].sort((a,b)=>a.created_at<b.created_at?1:-1).slice(0,RULES.postsRead);
  kol.posts={...postStats(tweets,kol.profile.followers),sourceUrl:profileUrl};
  if(!kol.posts.viewsAvailable)kol.couldNotVerify.push('view counts were not returned for these posts, so estimated real views and fair price are unavailable');
  const found=detectPromos(tweets,handle);
  kol.promos=found.promos.map(p=>({key:p.key,ref:p.ref,via:p.via,postUrl:p.firstPost.url,postDate:p.firstPost.createdAt,postCount:p.postCount,disclosed:p.disclosed,firstPostDisclosed:p.firstPostDisclosed,hype:p.hype,firstPost:p.firstPost,coin:null,outcome:null}));
  kol.omittedPromos=found.omitted;
  if(found.omitted)kol.couldNotVerify.push(`${found.omitted} further promoted coin(s) were not priced (cap of ${RULES.maxPromoCoins} per KOL)`);
- // Reply sample: recent search reaches back 7 days only.
- const recent=tweets.filter(t=>now-Date.parse(t.created_at)<RULES.recentSearchDays*DAY_MS).sort((a,b)=>(b.metrics?.reply_count??0)-(a.metrics?.reply_count??0)||(a.id<b.id?-1:1));
+ // Reply sample: recent search reaches back 7 days only, and to bound cost only the most recent promo posts are sampled.
+ const promoRecent=tweets.filter(t=>now-Date.parse(t.created_at)<RULES.recentSearchDays*DAY_MS&&extractRefs(t).length>0).sort((a,b)=>a.created_at<b.created_at?1:-1).slice(0,RULES.replyPosts);
  const replies=[],sampled=[];
- if(!recent.length)kol.replies={status:'unverified',reason:'no original posts within the 7-day search window, so reply quality could not be verified'};
+ if(!promoRecent.length)kol.replies={status:'unverified',reason:'no promotion post within the 7-day search window, so reply quality was not sampled (reply sampling is limited to the 2 most recent promo posts to bound X cost)'};
  else{
   let failure;
-  for(const t of recent.filter(t=>(t.metrics?.reply_count??1)>0).slice(0,3)){
+  for(const t of promoRecent.filter(t=>(t.metrics?.reply_count??1)>0)){
    if(replies.length>=RULES.replySample)break;
    try{replies.push(...await x.getReplies(t.id,handle));sampled.push(postUrl(handle,t.id))}catch(error){failure=error.message;break}
   }

@@ -104,9 +104,9 @@ test('call caps are enforced and labeled',async()=>{
 });
 test('estimated X spend cap stops further X reads and is labeled',async()=>{
  const f=counting(createMockFetch({now:NOW}));
- const report=await vetKols({handles:HANDLES},{deps:deps(f,{SHILLCHECK_MAX_X_COST_USD:'1'}),dir:tmp()});
- assert.ok(report.usage.estXCostUsd<=1.01,`${report.usage.estXCostUsd}`);
- assert.match(report.markdown,/estimated X spend cap of \$1 reached/);
+ const report=await vetKols({handles:HANDLES},{deps:deps(f,{SHILLCHECK_MAX_X_COST_USD:'0.5'}),dir:tmp()});
+ assert.ok(report.usage.estXCostUsd<=0.51,`${report.usage.estXCostUsd}`);
+ assert.match(report.markdown,/estimated X spend cap of \$0.5 reached/);
 });
 test('cache-only mode: a miss never calls X, cached handles still work, TTL is configurable',async()=>{
  const f=counting(createMockFetch({now:NOW}));
@@ -129,7 +129,7 @@ test('recent-search window: when no post is under 7 days old, replies are not se
  const later=createDeps({env,now:NOW+30*86400000,sleep,fetchImpl:f});
  const report=await vetKols({handles:['demo_alpha']},{deps:later,dir:tmp()});
  assert.equal(f.calls.filter(u=>u.includes('/search/recent')).length,0);
- assert.match(report.markdown,/no original posts within the 7-day search window/);
+ assert.match(report.markdown,/no promotion post within the 7-day search window/);
 });
 test('X results are cached for 6 hours, CoinGecko permanently',async()=>{
  const f=counting(createMockFetch({now:NOW}));

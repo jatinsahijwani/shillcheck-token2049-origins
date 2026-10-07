@@ -4,7 +4,7 @@ import {createDeps,vetKols,cleanHandles} from '../pipeline.mjs';
 import {createMockFetch} from '../mock-fetch.mjs';
 import {createCache} from '../cache.mjs';
 import {cacheDir,dataDir,isMock,RULES} from '../config.mjs';
-import {ttlFromEnv,normalizeHandle} from '../x-client.mjs';
+import {ttlFromEnv,normalizeHandle,handleCost} from '../x-client.mjs';
 import {quickFacts} from './quick.mjs';
 const DAY=86400000;
 const dayStart=()=>{const d=new Date();d.setUTCHours(0,0,0,0);return d.getTime()};
@@ -50,6 +50,6 @@ export function planTask(input,{env=process.env}={}){
  if(input.region&&!String(input.goal??'').toLowerCase().includes(String(input.region).toLowerCase()))tail.push(String(input.region).slice(0,40));
  const task_text=`${parts.join(' ')}.${tail.length?` ${tail.join(', ')}.`:''}`;
  return {task_text,handles:valid,invalid_inputs:invalid,dropped_beyond_limit:dropped,cached_handles:cached,uncached_handles:uncached,
-  live_x_enabled:env.X_LIVE_ALLOWED==='true',est_live_cost_usd_if_uncached:Math.round(uncached.length*0.7*100)/100,max_handles_per_task:RULES.maxHandles,
+  live_x_enabled:env.X_LIVE_ALLOWED==='true',est_live_cost_usd_if_uncached:Math.round(uncached.length*handleCost()*100)/100,max_handles_per_task:RULES.maxHandles,
   how_to:['Create a Task for this Coworker in your workspace and paste the task text.','Approve the 1 tUSDM quote.','The report arrives in the Task, usually in under a minute for cached handles; you can reply with changes like "drop anyone above $5K".']};
 }

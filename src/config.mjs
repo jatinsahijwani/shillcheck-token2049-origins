@@ -21,7 +21,7 @@ export const limits=(env=process.env)=>({
 });
 // Decision constants. Printed in every report so the rules are auditable.
 export const RULES={
- maxHandles:10,maxPromoCoins:8,originalPostsForAverages:50,replySample:30,minReplySample:10,
+ maxHandles:10,maxPromoCoins:8,postsRead:30,originalPostsForAverages:30,replyPosts:2,repliesPerPost:15,replySample:30,minReplySample:10,
  botAgeDays:90,botFollowers:10,botSignalsNeeded:2,
  defaultCpmUsd:15,lowEngagementRate:0.002,
  avoidBotShare:0.4,negotiateBotShare:0.2,negotiateFeeFactor:1.5,

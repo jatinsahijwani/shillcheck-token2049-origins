@@ -1,7 +1,11 @@
 import {getJson,SourceError,createBudget} from './http.mjs';
+import {RULES} from './config.mjs';
 const BASE='https://api.x.com/2';
 const HOUR=3600*1000;
 export const X_TTL_MS=6*HOUR;
+export const POST_COST=0.005,USER_COST=0.01;
+// Worst-case cost of one handle: user lookup + the timeline read + up to RULES.replyPosts reply searches.
+export const handleCost=()=>USER_COST+RULES.postsRead*POST_COST+RULES.replyPosts*RULES.repliesPerPost*POST_COST;
 export const ttlFromEnv=(env=process.env)=>(Number(env.X_CACHE_TTL_HOURS)>0?Number(env.X_CACHE_TTL_HOURS):6)*HOUR;
 export const normalizeHandle=input=>{
  const text=String(input??'').trim().replace(/^(https?:\/\/)?(www\.)?(x|twitter)\.com\//i,'').replace(/^@/,'').split(/[/?#]/)[0];
@@ -41,21 +45,21 @@ export function createXClient({bearer,fetchImpl=fetch,cache,budget=createBudget(
   },
   async getTweets(userId){
    return cached(`x:tweets:${userId}`,async()=>{
-    return spend(0.5,'X timeline',async()=>{
-     const body=await call(`/users/${encodeURIComponent(userId)}/tweets`,{max_results:'100',exclude:'retweets,replies','tweet.fields':'created_at,public_metrics,entities,note_tweet'},'X timeline');
+    return spend(RULES.postsRead*POST_COST,'X timeline',async()=>{
+     const body=await call(`/users/${encodeURIComponent(userId)}/tweets`,{max_results:String(RULES.postsRead),exclude:'retweets,replies','tweet.fields':'created_at,public_metrics,entities,note_tweet'},'X timeline');
      stats.posts+=(body.data??[]).length;
-     return {value:(body.data??[]).map(t=>({id:t.id,created_at:t.created_at,text:t.note_tweet?.text??t.text??'',entities:t.entities??{},noteEntities:t.note_tweet?.entities??{},metrics:t.public_metrics??{}})),cost:(body.data??[]).length*0.005};
+     return {value:(body.data??[]).map(t=>({id:t.id,created_at:t.created_at,text:t.note_tweet?.text??t.text??'',entities:t.entities??{},noteEntities:t.note_tweet?.entities??{},metrics:t.public_metrics??{}})),cost:(body.data??[]).length*POST_COST};
     });
    });
   },
   // Recent search only reaches back 7 days; callers must check the post's age first.
   async getReplies(tweetId,handle){
    return cached(`x:replies:${tweetId}`,async()=>{
-    return spend(0.125,'X reply search',async()=>{
-     const body=await call('/tweets/search/recent',{query:`conversation_id:${tweetId} is:reply -from:${handle}`,max_results:'25','tweet.fields':'author_id,created_at','expansions':'author_id','user.fields':'created_at,public_metrics,profile_image_url'},'X reply search');
+    return spend(RULES.repliesPerPost*POST_COST,'X reply search',async()=>{
+     const body=await call('/tweets/search/recent',{query:`conversation_id:${tweetId} is:reply -from:${handle}`,max_results:String(RULES.repliesPerPost),'tweet.fields':'author_id,created_at','expansions':'author_id','user.fields':'created_at,public_metrics,profile_image_url'},'X reply search');
      stats.posts+=(body.data??[]).length;
      const users=new Map((body.includes?.users??[]).map(u=>[u.id,u]));
-     return {value:(body.data??[]).map(t=>({id:t.id,text:t.text??'',author:users.get(t.author_id)??null})),cost:(body.data??[]).length*0.005};
+     return {value:(body.data??[]).map(t=>({id:t.id,text:t.text??'',author:users.get(t.author_id)??null})),cost:(body.data??[]).length*POST_COST};
     });
    });
   },

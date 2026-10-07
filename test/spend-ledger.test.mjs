@@ -29,7 +29,7 @@ test('live reads are recorded, and past the daily cap only cached data is served
  const first=createDeps({env,now:NOW,sleep:async()=>{},fetchImpl:createMockFetch({now:NOW}),ledger});
  await vetKols({handles:['demo_alpha']},{deps:first,dir:mkdtempSync(join(tmpdir(),'cap-'))});
  const spent=ledger.total();
- assert.ok(spent>0.5&&spent<1.5,`recorded ${spent}`);
+ assert.ok(spent>0.1&&spent<0.5,`recorded ${spent}`);
  // Same cache, ledger now at the cap: demo_alpha is cached and still works, demo_pumper needs live reads and is refused.
  ledger.add(25-spent,'task');
  const capped=createDeps({env,now:NOW,sleep:async()=>{},fetchImpl:createMockFetch({now:NOW}),ledger,cache:first.cache});

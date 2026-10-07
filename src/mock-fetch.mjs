@@ -16,9 +16,9 @@ const COINS={
 const SEARCH={ALPHA:[{id:'alphacoin',symbol:'ALPHA',name:'Alpha Mock',market_cap_rank:812},{id:'alphabet-x',symbol:'ABX',name:'Alphabet X',market_cap_rank:10}],BETA:['betacoin'],FRESH:['freshcoin'],RUGONE:['rugone'],DUMPTWO:['dumptwo'],PUMP3:['pumpthree'],FLUFFY:['fluffy'],
  TWIN:[{id:'twin-a',symbol:'TWIN',name:'Twin A',market_cap_rank:null},{id:'twin-b',symbol:'TWIN',name:'Twin B',market_cap_rank:null}]};
 const KOLS={
- demo_alpha:{id:'9001',followers:800000,location:'Singapore',created:'2018-03-02T00:00:00.000Z',avg:{v:300000,l:4000,r:500,re:250,q:80},gap:2.5,botShare:0.05,promos:[['alphacoin','#ad Partnered with $ALPHA. Details in the thread.'],['betacoin','Sponsored: $BETA is building payments. #ad'],['freshcoin','Paid partnership with $FRESH, see what they ship.']]},
- demo_pumper:{id:'9002',followers:900000,location:'Dubai',created:'2021-06-10T00:00:00.000Z',avg:{v:250000,l:2500,r:400,re:150,q:50},gap:2,botShare:0.6,promos:[['rugone','$RUGONE is an early gem, 100x easy 🚀 nfa'],['dumptwo','Ape $DUMPTWO before it moons, early. nfa'],['pumpthree','$PUMP3 100x gem, early ape'],['cacoin',`CA ${EVM_CA} gem, this will moon`],['TWIN',"$TWIN looks early, nfa"],['NOPE','$NOPE gem 100x']]},
- demo_ghost:{id:'9003',followers:2000000,location:'London',created:'2020-01-15T00:00:00.000Z',avg:{v:12000,l:20,r:3,re:2,q:0.5},gap:3,botShare:0.3,promos:[['fluffy','$FLUFFY update: ads are live, partnered #ad']]},
+ demo_alpha:{id:'9001',followers:800000,location:'Singapore',created:'2018-03-02T00:00:00.000Z',avg:{v:300000,l:4000,r:500,re:250,q:80},gap:7,botShare:0.05,recent:[['freshcoin','Paid partnership update on $FRESH #ad']],promos:[['alphacoin','#ad Partnered with $ALPHA. Details in the thread.'],['betacoin','Sponsored: $BETA is building payments. #ad'],['freshcoin','Paid partnership with $FRESH, see what they ship.']]},
+ demo_pumper:{id:'9002',followers:900000,location:'Dubai',created:'2021-06-10T00:00:00.000Z',avg:{v:250000,l:2500,r:400,re:150,q:50},gap:5.5,botShare:0.6,recent:[['TWIN','$TWIN again, early gem nfa']],promos:[['rugone','$RUGONE is an early gem, 100x easy 🚀 nfa'],['dumptwo','Ape $DUMPTWO before it moons, early. nfa'],['pumpthree','$PUMP3 100x gem, early ape'],['cacoin',`CA ${EVM_CA} gem, this will moon`],['TWIN',"$TWIN looks early, nfa"],['NOPE','$NOPE gem 100x']]},
+ demo_ghost:{id:'9003',followers:2000000,location:'London',created:'2020-01-15T00:00:00.000Z',avg:{v:12000,l:20,r:3,re:2,q:0.5},gap:5,botShare:0.3,recent:[['fluffy','$FLUFFY roadmap update, partnered #ad']],promos:[['fluffy','$FLUFFY update: ads are live, partnered #ad']]},
 };
 const iso=ms=>new Date(ms).toISOString();
 function coinPrice(c,ms,now){
@@ -42,6 +42,12 @@ function tweetsFor(handle,k,now){
   const post={id,created_at:iso(now-daysAgo*DAY),text,public_metrics:{impression_count:Math.round(k.avg.v*jitter()),like_count:Math.round(k.avg.l*jitter()),retweet_count:Math.round(k.avg.r*jitter()),reply_count:Math.round(k.avg.re*jitter()),quote_count:Math.round(k.avg.q*jitter())}};
   const tag=/\$([A-Za-z0-9]+)/.exec(text);
   if(tag)post.entities={cashtags:[{start:0,end:1,tag:tag[1]}]};
+  posts.push(post);
+ });
+ // One recent promo post per KOL: reply sampling is limited to recent promo posts.
+ (k.recent??[]).forEach(([coin,text],i)=>{
+  const post={id:String(7500000+i*7+Number(k.id.slice(-1))),created_at:iso(now-2*DAY),text,public_metrics:{impression_count:Math.round(k.avg.v*jitter()),like_count:Math.round(k.avg.l*jitter()),retweet_count:Math.round(k.avg.r*jitter()),reply_count:Math.round(k.avg.re*jitter()),quote_count:Math.round(k.avg.q*jitter())}};
+  const tag=/\$([A-Za-z0-9]+)/.exec(text);if(tag)post.entities={cashtags:[{start:0,end:1,tag:tag[1]}]};
   posts.push(post);
  });
  posts.sort((a,b)=>a.created_at<b.created_at?1:-1);
@@ -72,12 +78,12 @@ export function createMockFetch({now=Date.now()}={}){
    }
    if((m=p.match(/^\/2\/users\/(\d+)\/tweets$/))){
     const entry=Object.entries(KOLS).find(([,k])=>k.id===m[1]);
-    return entry?json({data:tweetsFor(entry[0],entry[1],now)}):json({data:[]});
+    return entry?json({data:tweetsFor(entry[0],entry[1],now).slice(0,Number(url.searchParams.get('max_results')||100))}):json({data:[]});
    }
    if(p==='/2/tweets/search/recent'){
     const q=url.searchParams.get('query'),id=/conversation_id:(\d+)/.exec(q)?.[1],handle=/-from:(\w+)/.exec(q)?.[1]?.toLowerCase();
     const k=KOLS[handle];
-    return k&&id?json(repliesFor(id,handle,k,now)):json({});
+    if(!(k&&id))return json({});const full=repliesFor(id,handle,k,now),max=Number(url.searchParams.get('max_results')||25);return json({data:full.data.slice(0,max),includes:full.includes});
    }
    return json({},404);
   }

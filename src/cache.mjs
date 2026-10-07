@@ -12,6 +12,8 @@ export function createCache({dir,now=Date.now}={}){
   try{const entry=JSON.parse(readFileSync(file(key),'utf8'));memory.set(key,entry);return entry}catch{return undefined}
  };
  return {
+  // Age of an entry in ms, or undefined when absent. Used to plan pre-warming around a deadline.
+  age(key){const entry=read(key);return entry?now()-entry.at:undefined},
   get(key,ttlMs){const entry=read(key);if(!entry)return undefined;if(ttlMs!==undefined&&now()-entry.at>ttlMs)return undefined;return entry.value},
   set(key,value){
    const entry={at:now(),value};memory.set(key,entry);

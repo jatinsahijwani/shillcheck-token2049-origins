@@ -27,10 +27,10 @@ test('reply quality share, uniqueness and minimum sample',()=>{
  assert.equal(q.checked,20);assert.equal(q.botLike,6);assert.equal(q.share,0.3);assert.equal(q.sufficient,true);
  const few=replyQuality(replies.slice(0,5),NOW);assert.equal(few.share,null);assert.equal(few.sufficient,false);
 });
-test('post averages use the latest 50 originals; rates against followers',()=>{
- const posts=Array.from({length:60},(_,i)=>({created_at:iso(i),metrics:{impression_count:i<50?1000:999999,like_count:10,retweet_count:4,reply_count:3,quote_count:1}}));
+test('post averages use the latest 30 originals; rates against followers',()=>{
+ const posts=Array.from({length:60},(_,i)=>({created_at:iso(i),metrics:{impression_count:i<30?1000:999999,like_count:10,retweet_count:4,reply_count:3,quote_count:1}}));
  const s=postStats(posts,10000);
- assert.equal(s.n,50);assert.equal(s.avgViews,1000);assert.equal(s.engagementRate,18/10000);assert.equal(s.viewRate,0.1);
+ assert.equal(s.n,30);assert.equal(s.avgViews,1000);assert.equal(s.engagementRate,18/10000);assert.equal(s.viewRate,0.1);
 });
 test('fair price uses median views, so viral outliers do not inflate it',()=>{
  const posts=[...Array.from({length:9},(_,i)=>({created_at:iso(i),metrics:{impression_count:1000}})),{created_at:iso(20),metrics:{impression_count:1000000}}];
