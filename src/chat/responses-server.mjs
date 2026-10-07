@@ -28,7 +28,9 @@ export function lastUserText(input){
   if(typeof item.content==='string')return item.content;
   if(Array.isArray(item.content)){
    const text=item.content.filter(p=>p&&typeof p.text==='string'&&(p.type==='input_text'||p.type==='text'||!p.type)).map(p=>p.text).join('\n');
-   if(text)return text;
+   // An attached image arrives as an input_image part with an https URL; hand it on as a link in the text (data: URLs are ignored).
+   const images=item.content.filter(p=>p?.type==='input_image'&&typeof p.image_url==='string'&&/^https:\/\//.test(p.image_url)).map(p=>p.image_url);
+   if(text||images.length)return [text,...images].filter(Boolean).join('\n');
   }
  }
  return '';

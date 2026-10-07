@@ -5,8 +5,15 @@ import { dataDir, turnTimeoutMs } from './src/config.mjs';
 const MODEL_TURN_TIMEOUT_MS=turnTimeoutMs();
 export const client=new Client({host:process.env.EVE_URL});
 import { answerWithoutModel } from './src/fallback.mjs';
+import { routeBrief } from './src/product/input.mjs';
+import { planProduct, productModeEnabled } from './src/product/plan.mjs';
 export async function answer(input,journal,deadline) {
  if(typeof input!=='string'||!input.trim()||input.length>16000) throw new Error('Input must contain 1 to 16000 characters');
+ // BETA product campaign planner: only with PRODUCT_MODE_ENABLED=true and only for briefs without handles or token words.
+ if(productModeEnabled()&&routeBrief(input)==='product'){
+  try{const message=await planProduct(input);writeFileSync(journal,JSON.stringify({phase:'answered',result:message,product:true}),{mode:0o600});return message}
+  catch(error){console.error('Product planner failed, using the standard path:',String(error?.message).slice(0,100))}
+ }
  try{return await answerWithModel(input,journal,deadline)}
  catch(error){
   // The deadline guard must still fail loudly. Anything else is a model or eve problem: the analysis does not need the model.

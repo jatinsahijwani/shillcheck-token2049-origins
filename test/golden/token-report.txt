@@ -1,0 +1,163 @@
+Assumptions: the language model is unavailable right now, so your request was read with simple rules (3 handles, budget $20,000, region asia). The analysis below is computed by the same deterministic code as always.
+
+# ShillCheck report rpt_X
+
+> **MOCK DATA.** Fixture accounts and prices. Nothing below describes real people or tokens.
+
+Data as of 2026-10-06 07:00 UTC from X API v2, CoinGecko and DefiLlama. Figures are estimates from public data about past posts and prices; they are not statements about anyone's intent.
+
+**Assumptions**
+- Budget $20,000 (given).
+- CPM $15 per 1,000 real views (default).
+- Region focus: asia. Location is self-reported; blank means unknown.
+
+## Summary
+
+| # | KOL | Verdict | Followers | Views median (mean) | Bot-like replies (est.) | Est. real views | Median 30-day | Fair price (est.) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | [@demo_alpha](https://x.com/demo_alpha) | **Hire** | [800,000](https://x.com/demo_alpha) | [292,047 (292,553)](https://x.com/demo_alpha) | [0%](https://x.com/demo_alpha/status/7500001) | [292,047](https://x.com/demo_alpha) | [7%](https://www.coingecko.com/en/coins/betacoin) | [$4,381](https://x.com/demo_alpha) |
+| 2 | [@demo_ghost](https://x.com/demo_ghost) | **Negotiate** | [2,000,000](https://x.com/demo_ghost) | [11,793 (11,813)](https://x.com/demo_ghost) | [27%](https://x.com/demo_ghost/status/7500003) | [8,648](https://x.com/demo_ghost) | [2%](https://www.coingecko.com/en/coins/fluffy) | [$130](https://x.com/demo_ghost) |
+| 3 | [@demo_pumper](https://x.com/demo_pumper) | **Avoid** | [900,000](https://x.com/demo_pumper) | [260,829 (253,094)](https://x.com/demo_pumper) | [60%](https://x.com/demo_pumper/status/7500002) | [104,332](https://x.com/demo_pumper) | [−75%](https://www.coingecko.com/en/coins/cacoin) | [$782](https://x.com/demo_pumper) |
+
+## Key takeaways
+
+- Highest ranked: [@demo_alpha](https://x.com/demo_alpha) (Hire), about 292,047 estimated real views per post and a fair price of $4,381.
+- Verdict count: 1 Hire, 1 Negotiate, 1 Avoid, 0 not rated. Example: @demo_pumper: 60% of sampled repliers show 2+ bot signals (threshold 40%).
+- Of $20,000, $4,381 is allocated and $15,619 is unallocated, because spend per KOL is capped at its fair price.
+
+## KOL details
+
+### 1. [@demo_alpha](https://x.com/demo_alpha): **Hire**
+No rule-based concern found in the sampled data.
+
+**Real reach**
+- Followers: [800,000](https://x.com/demo_alpha) · self-reported location: Singapore
+- Averages over the last 30 original posts (2026-04-13 to 2026-10-05): views mean [292,553](https://x.com/demo_alpha) / **median [292,047](https://x.com/demo_alpha)**, likes [4,078](https://x.com/demo_alpha), reposts [494](https://x.com/demo_alpha), replies [241](https://x.com/demo_alpha), quotes [78.3](https://x.com/demo_alpha)
+- Engagement rate: [0.611%](https://x.com/demo_alpha) of followers · view rate: [36.6%](https://x.com/demo_alpha) of followers
+- Reply sample: 15 unique repliers across [post](https://x.com/demo_alpha/status/7500001). Bot-like (2 or more signals): [0 (0%)](https://x.com/demo_alpha/status/7500001). Signals seen: none. **ESTIMATE**
+- Estimated real views per post (**ESTIMATE**): 292,047 median views × (1 − 0) = **292,047**
+
+**Promotion track record**
+| Coin | Via | First post | Price at post | +7 days | +30 days | Wording | Status |
+|---|---|---|---|---|---|---|---|
+| [FRESH](https://www.coingecko.com/en/coins/freshcoin) | ticker | [2026-09-26](https://x.com/demo_alpha/status/7000015) (+1 more) | [$0.0901](https://www.coingecko.com/en/coins/freshcoin) | [$0.0927 (3%)](https://www.coingecko.com/en/coins/freshcoin) | pending | disclosure word present | pending (10d old) |
+| [BETA](https://www.coingecko.com/en/coins/betacoin) | ticker | [2026-07-08](https://x.com/demo_alpha/status/7000008) | [$1.80](https://www.coingecko.com/en/coins/betacoin) | [$1.89 (5%)](https://www.coingecko.com/en/coins/betacoin) | [$1.62 (−10%)](https://www.coingecko.com/en/coins/betacoin) | disclosure word present | priced |
+| [ALPHA](https://www.coingecko.com/en/coins/alphacoin) | ticker | [2026-05-09](https://x.com/demo_alpha/status/7000001) | [$0.421](https://www.coingecko.com/en/coins/alphacoin) | [$0.471 (12%)](https://www.coingecko.com/en/coins/alphacoin) | [$0.525 (25%)](https://www.coingecko.com/en/coins/alphacoin) | disclosure word present | priced |
+
+Median 30-day change: **7%** · worst: **−10%** across 2 token(s) with a 30-day price.
+
+**Red flags (facts from the sampled data)**
+- None found by the rules below.
+
+**Fair price (ESTIMATE)**
+- 292,047 est. real views (median views × (1 − bot share)) ÷ 1000 × $15 CPM × 1 outcome multiplier = **$4,381**
+
+**Verdict: Hire.** No rule-based concern found in the sampled data.
+
+### 2. [@demo_ghost](https://x.com/demo_ghost): **Negotiate**
+27% of sampled repliers show 2+ bot signals (range 20%-40%).
+
+**Real reach**
+- Followers: [2,000,000](https://x.com/demo_ghost) · self-reported location: London
+- Averages over the last 30 original posts (2026-05-23 to 2026-10-05): views mean [11,813](https://x.com/demo_ghost) / **median [11,793](https://x.com/demo_ghost)**, likes [19.7](https://x.com/demo_ghost), reposts [2.9](https://x.com/demo_ghost), replies [2.2](https://x.com/demo_ghost), quotes [0.5](https://x.com/demo_ghost)
+- Engagement rate: [0.001%](https://x.com/demo_ghost) of followers · view rate: [0.6%](https://x.com/demo_ghost) of followers
+- Reply sample: 15 unique repliers across [post](https://x.com/demo_ghost/status/7500003). Bot-like (2 or more signals): [4 (27%)](https://x.com/demo_ghost/status/7500003). Signals seen: account age under 90 days: 4; default avatar: 4; duplicate reply text: 4; fewer than 10 followers: 4; generic hype-only text: 4. **ESTIMATE**
+- Estimated real views per post (**ESTIMATE**): 11,793 median views × (1 − 0.27) = **8,648**
+
+**Promotion track record**
+| Coin | Via | First post | Price at post | +7 days | +30 days | Wording | Status |
+|---|---|---|---|---|---|---|---|
+| [FLUFFY](https://www.coingecko.com/en/coins/fluffy) | ticker | [2026-08-07](https://x.com/demo_ghost/status/7000003) (+1 more) | [$0.2](https://www.coingecko.com/en/coins/fluffy) | [$0.2 (0%)](https://www.coingecko.com/en/coins/fluffy) | [$0.204 (2%)](https://www.coingecko.com/en/coins/fluffy) | disclosure word present | priced |
+
+Median 30-day change: **2%** · worst: **2%** across 1 token(s) with a 30-day price.
+
+**Red flags (facts from the sampled data)**
+- 27% of 15 sampled repliers show 2 or more bot signals (estimate).
+- Average engagement is 0.001% of followers, below the 0.2% threshold ([profile](https://x.com/demo_ghost)).
+
+**Fair price (ESTIMATE)**
+- 8,648 est. real views (median views × (1 − bot share)) ÷ 1000 × $15 CPM × 1 outcome multiplier = **$130**
+
+**Verdict: Negotiate.** 27% of sampled repliers show 2+ bot signals (range 20%-40%); engagement is 0.001% of followers (threshold 0.2%).
+
+### 3. [@demo_pumper](https://x.com/demo_pumper): **Avoid**
+60% of sampled repliers show 2+ bot signals (threshold 40%).
+
+**Real reach**
+- Followers: [900,000](https://x.com/demo_pumper) · self-reported location: Dubai
+- Averages over the last 30 original posts (2026-06-06 to 2026-10-05): views mean [253,094](https://x.com/demo_pumper) / **median [260,829](https://x.com/demo_pumper)**, likes [2,458](https://x.com/demo_pumper), reposts [417](https://x.com/demo_pumper), replies [148](https://x.com/demo_pumper), quotes [47.6](https://x.com/demo_pumper)
+- Engagement rate: [0.341%](https://x.com/demo_pumper) of followers · view rate: [28.1%](https://x.com/demo_pumper) of followers
+- Reply sample: 15 unique repliers across [post](https://x.com/demo_pumper/status/7500002). Bot-like (2 or more signals): [9 (60%)](https://x.com/demo_pumper/status/7500002). Signals seen: account age under 90 days: 9; default avatar: 9; duplicate reply text: 9; fewer than 10 followers: 9; generic hype-only text: 9. **ESTIMATE**
+- Estimated real views per post (**ESTIMATE**): 260,829 median views × (1 − 0.6) = **104,332**
+
+**Promotion track record**
+| Coin | Via | First post | Price at post | +7 days | +30 days | Wording | Status |
+|---|---|---|---|---|---|---|---|
+| TWIN | ticker | [2026-09-16](https://x.com/demo_pumper/status/7000030) (+1 more) | — | — | — | no disclosure word, hype wording | could not verify: ticker $TWIN matches 2 CoinGecko listings with no clear market-cap rank |
+| [CACOIN](https://www.coingecko.com/en/coins/cacoin) | contract | [2026-08-27](https://x.com/demo_pumper/status/7000023) | [$0.497](https://www.coingecko.com/en/coins/cacoin) | [$0.399 (−20%)](https://www.coingecko.com/en/coins/cacoin) | [$0.3 (−40%)](https://www.coingecko.com/en/coins/cacoin) | no disclosure word, hype wording | priced |
+| [PUMP3](https://www.coingecko.com/en/coins/pumpthree) | ticker | [2026-08-12](https://x.com/demo_pumper/status/7000016) | [$0.149](https://www.coingecko.com/en/coins/pumpthree) | [$0.104 (−30%)](https://www.coingecko.com/en/coins/pumpthree) | [$0.042 (−72%)](https://www.coingecko.com/en/coins/pumpthree) | no disclosure word, hype wording | priced |
+| [DUMPTWO](https://www.coingecko.com/en/coins/dumptwo) | ticker | [2026-07-18](https://x.com/demo_pumper/status/7000009) | [$0.00727](https://www.coingecko.com/en/coins/dumptwo) | [$0.00294 (−60%)](https://www.coingecko.com/en/coins/dumptwo) | [$0.00111 (−85%)](https://www.coingecko.com/en/coins/dumptwo) | no disclosure word, hype wording | priced |
+| NOPE | ticker | [2026-06-28](https://x.com/demo_pumper/status/7000037) | — | — | — | no disclosure word, hype wording | could not verify: $NOPE is not listed on CoinGecko by exact symbol |
+| [RUGONE](https://www.coingecko.com/en/coins/rugone) | ticker | [2026-06-08](https://x.com/demo_pumper/status/7000002) | [$0.0306](https://www.coingecko.com/en/coins/rugone) | [$0.017 (−45%)](https://www.coingecko.com/en/coins/rugone) | [$0.00682 (−78%)](https://www.coingecko.com/en/coins/rugone) | no disclosure word, hype wording | priced |
+
+Median 30-day change: **−75%** · worst: **−85%** across 4 token(s) with a 30-day price.
+
+**Red flags (facts from the sampled data)**
+- 60% of 15 sampled repliers show 2 or more bot signals (estimate).
+- PUMP3 fell 72% within 30 days of the post ([post](https://x.com/demo_pumper/status/7000016), [CoinGecko](https://www.coingecko.com/en/coins/pumpthree)).
+- DUMPTWO fell 85% within 30 days of the post ([post](https://x.com/demo_pumper/status/7000009), [CoinGecko](https://www.coingecko.com/en/coins/dumptwo)).
+- RUGONE fell 78% within 30 days of the post ([post](https://x.com/demo_pumper/status/7000002), [CoinGecko](https://www.coingecko.com/en/coins/rugone)).
+- Contract-address post without a disclosure word: [2026-08-27](https://x.com/demo_pumper/status/7000023).
+
+**Fair price (ESTIMATE)**
+- 104,332 est. real views (median views × (1 − bot share)) ÷ 1000 × $15 CPM × 0.5 outcome multiplier = **$782**
+
+**Verdict: Avoid.** 60% of sampled repliers show 2+ bot signals (threshold 40%); 3 promoted tokens were down more than 70% at 30 days; median 30-day price change −75% across 4 promoted tokens.
+
+## Budget split
+
+Budget $20,000. Hire KOLs are funded first, then Negotiate, pro rata to fair price and never above it.
+
+| KOL | Verdict | Fair price (est.) | Quoted fee | Allocation |
+|---|---|---|---|---|
+| [@demo_alpha](https://x.com/demo_alpha) | Hire | $4,381 | n/a | $4,381 |
+| [@demo_ghost](https://x.com/demo_ghost) | Negotiate | $130 | n/a | not funded (outside region focus) |
+| [@demo_pumper](https://x.com/demo_pumper) | Avoid | $782 | n/a | not funded (Avoid) |
+
+**Unallocated: $15,619**
+
+## Could not verify
+
+- @demo_pumper: $TWIN promotion on 2026-09-16: ticker $TWIN matches 2 CoinGecko listings with no clear market-cap rank.
+- @demo_pumper: $NOPE promotion on 2026-06-28: $NOPE is not listed on CoinGecko by exact symbol.
+
+## Sources and method
+
+Price data by CoinGecko / DefiLlama. Posts and profiles from X.
+
+- https://www.coingecko.com/en/coins/alphacoin
+- https://www.coingecko.com/en/coins/betacoin
+- https://www.coingecko.com/en/coins/cacoin
+- https://www.coingecko.com/en/coins/dumptwo
+- https://www.coingecko.com/en/coins/fluffy
+- https://www.coingecko.com/en/coins/freshcoin
+- https://www.coingecko.com/en/coins/pumpthree
+- https://www.coingecko.com/en/coins/rugone
+- https://x.com/demo_alpha
+- https://x.com/demo_alpha/status/7000001
+- https://x.com/demo_alpha/status/7000008
+- https://x.com/demo_alpha/status/7000015
+- https://x.com/demo_alpha/status/7500001
+- https://x.com/demo_ghost
+- https://x.com/demo_ghost/status/7000003
+- https://x.com/demo_ghost/status/7500003
+- https://x.com/demo_pumper
+- https://x.com/demo_pumper/status/7000002
+- https://x.com/demo_pumper/status/7000009
+- https://x.com/demo_pumper/status/7000016
+- https://x.com/demo_pumper/status/7000023
+- https://x.com/demo_pumper/status/7000030
+- https://x.com/demo_pumper/status/7000037
+- https://x.com/demo_pumper/status/7500002
+
+Rules: bot-like reply = 2+ of: account under 90 days, default avatar, under 10 followers, generic hype-only text, duplicate text. Fair price = est. real views (median post views × (1 − bot share)) ÷ 1000 × CPM × outcome multiplier (median 30-day change above −20%: 1.0; −20% to −50%: 0.75; −50% or lower: 0.5). Avoid: bot share 40% or more, or 2+ promoted tokens down more than 70% at 30 days, or median 30-day change −50% or lower with 3+ priced promotions. Negotiate: bot share 20-40%, engagement under 0.2% of followers, a contract-address post without a disclosure word, median 30-day change −20% to −50%, or a quoted fee above 1.5x fair price. Otherwise Hire. Promotion = a ticker, contract address or promo wording in an original post, major coins excluded, up to 8 coins per KOL.
