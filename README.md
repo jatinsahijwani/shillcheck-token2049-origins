@@ -129,8 +129,11 @@ One EC2 host (Ubuntu 24.04, Elastic IP, encrypted EBS) runs everything under pm2
 | `shillcheck-worker` | Task worker, exactly one | none |
 | `shillcheck-chat-eve` | chat agent | 127.0.0.1:21971 |
 | `shillcheck-chat` | Responses endpoint for chat | 127.0.0.1:21970 |
+| `shillcheck-priceproof` | PriceProof agent (second Masumi agent; used only when `PRICEPROOF_ENABLED=true`) | 127.0.0.1:21960 |
 
 The worker has no OS vault on the server: it reads the Coworker key from a 600 file and passes it to the Sokosumi CLI over stdin. Never run a second worker or a second MPS against the same wallet.
+
+PriceProof settings (`PRICEPROOF_ENABLED`, `PRICEPROOF_TIMEOUT_MS`, `PRICEPROOF_MAX_PRICE_ATOMIC`) are in `.env.example`; the sub-purchase is capped at 7 minutes so a paid Task (20 minute result window) always keeps at least 8 minutes of margin, and a retried model turn reuses an identical verified purchase instead of buying again.
 
 Monitoring: cron runs `scripts/healthcheck.mjs` every 5 minutes (process state, MPS, API, eve, chat, worker heartbeat, Gemini reachability), restarts a dead or unhealthy process (at most 3 times an hour) and writes `status.json`. `scripts/aws.sh health` prints it from a laptop; `scripts/aws.sh status-url` gives an HTTPS status URL. Daily `pg_dump` and state archives are kept on the host and pulled, encrypted, to the laptop by `scripts/pull-backups.sh`.
 
