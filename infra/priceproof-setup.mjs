@@ -44,18 +44,18 @@ if(cmd==='plan'||!cmd){
 }
 if(cmd==='wallet'){
  if(state.sellingWalletId){console.log('PriceProof selling wallet already attached',state.sellingWalletId);process.exit(0)}
- need(!state.walletWritePending,'Previous wallet write is uncertain: inspect GET /wallet/list and .local/priceproof-wallet.secret before retrying');
+ need(!state.walletWritePending,'Previous wallet creation is uncertain: inspect .local/priceproof-wallet.secret before retrying');
  if(!fs.existsSync('.local/priceproof-wallet.secret')){
   state.walletWritePending=true;save();
   const w=await request('/wallet',{body:{network:'Preprod'}});
   // Persist the mnemonic BEFORE anything else: MPS does not store a wallet created this way.
   fs.writeFileSync('.local/priceproof-wallet.secret',JSON.stringify({walletMnemonic:w.walletMnemonic}),{mode:0o600});
-  state.sellerAddress=w.walletAddress;state.walletVkey=w.walletVkey;state.walletCreated=true;save();
+  state.sellerAddress=w.walletAddress;state.walletVkey=w.walletVkey;state.walletCreated=true;state.walletWritePending=false;save();
  }
  const secret=JSON.parse(fs.readFileSync('.local/priceproof-wallet.secret','utf8'));
  need(state.walletVkey,'wallet vkey missing from state');
  state.attachPending=true;save();
- await request('/payment-source-extended',{method:'PATCH',body:{id:payment.sourceId,AddSellingWallets:[{walletMnemonic:secret.walletMnemonic,note:'PriceProof selling wallet'}]}});
+ await request('/payment-source-extended',{method:'PATCH',body:{id:payment.sourceId,AddSellingWallets:[{walletMnemonic:secret.walletMnemonic,note:'PriceProof selling wallet',collectionAddress:null}]}});
  const list=await request(`/wallet/list?walletType=Selling&paymentSourceId=${payment.sourceId}&walletVkey=${state.walletVkey}`);
  const w=list.Wallets.find(x=>x.walletVkey===state.walletVkey);
  need(w,'attached wallet not found in /wallet/list');
