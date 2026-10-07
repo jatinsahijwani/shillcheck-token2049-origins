@@ -3,7 +3,7 @@ const IMAGE_EXT=/\.(?:png|jpe?g|webp|gif)(?:[?#][^\s)>\]]*)?$/i;
 const toNumber=(n,suffix)=>Number(String(n).replace(/,/g,''))*({k:1e3,m:1e6}[String(suffix??'').toLowerCase()]??1);
 const REGIONS=/\b(india|asia|europe|latam|africa|mena|oceania|north america|usa|uk|uae|japan|brazil)\b/i;
 // Task attachments reach the worker as markdown links in the Task description; chat can carry the same link or a bare URL.
-const urlsIn=text=>[...String(text??'').matchAll(/https?:\/\/[^\s)>\]"']+/gi)].map(m=>m[0]);
+const urlsIn=text=>[...String(text??'').matchAll(/https?:\/\/[^\s)>\]"']+/gi)].map(m=>m[0].replace(/[.,;:!?]+$/,''));
 export function parseProductBrief(text){
  const t=String(text??'');
  const urls=urlsIn(t);

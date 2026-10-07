@@ -11,7 +11,7 @@ export function validateProduct(v){
  return null;
 }
 const SYSTEM=`You read a product for an influencer marketing planner. Reply with ONE JSON object and nothing else:
-{"product_type":string,"category":string,"price_tier_guess":"budget"|"mid-range"|"premium"|"luxury","visual_style":string,"target_audience":string,"search_keywords":[5 to 8 short words or hashtags real people use when posting about this kind of product, no brand names of the product itself],"likely_competitors":[1 to 6 well-known brands that sell similar products]}
+{"product_type":string,"category":string,"price_tier_guess":"budget"|"mid-range"|"premium"|"luxury","visual_style":string,"target_audience":string,"search_keywords":[5 to 8 search terms: phrases of two or more words or hashtags that people actually write in posts when they buy, wear or review this kind of product, for example \"new running shoes\" or \"#runningshoes\". No single generic words, no brand names],"likely_competitors":[1 to 6 well-known brands that sell similar products]}
 Describe only what is visible or stated. If you are unsure, say so inside the strings. Never invent facts about the exact brand.`;
 // Image (data URL) and/or description -> validated product read. Retries once on invalid output; null when still invalid.
 export async function understandProduct({imageDataUrl,description,region},{llm}){

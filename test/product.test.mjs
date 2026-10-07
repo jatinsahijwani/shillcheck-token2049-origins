@@ -108,6 +108,7 @@ test('routing: handles or token words go to the token path; photo or product des
  assert.equal(routeBrief('Influencer marketing for my new running shoes, budget $10K'),'product');
  assert.equal(routeBrief('hello'),'none');
  assert.deepEqual(parseProductBrief('shoes https://x.co/a.png budget $10K India').budget_usd,10000);
+ assert.equal(parseProductBrief('these shoes https://x.co/a.jpg, budget $5K').imageUrl,'https://x.co/a.jpg'); // trailing comma is not part of the link
 });
 test('image fetch refuses private hosts, non-https, non-images and oversize files',async()=>{
  const ok=async()=>[{address:'93.184.216.34'}];
