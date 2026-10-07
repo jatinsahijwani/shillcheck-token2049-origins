@@ -12,6 +12,9 @@ module.exports = {
     { name: 'shillcheck-eve', script: process.execPath, args: ['--env-file-if-exists=.env', '--env-file-if-exists=.local/priceproof-purchase.env', 'start.mjs'], interpreter: 'none', ...base, ...log('eve') },
     // PriceProof: separate deterministic Standard API on its own loopback port. Not started until it is registered.
     { name: 'shillcheck-priceproof', script: 'priceproof/server.mjs', node_args: ['--env-file-if-exists=.env', '--env-file-if-exists=.local/priceproof-runtime.env'], ...base, ...log('priceproof') },
+    // Chat: a second eve agent (chat-agent/) with its own prompt and tools, plus the Responses endpoint Sokosumi calls.
+    { name: 'shillcheck-chat-eve', script: process.execPath, args: ['--env-file-if-exists=../.env', '../start.mjs'], interpreter: 'none', ...base, cwd: path.join(root, 'chat-agent'), env: { EVE_PORT: '21971', EVE_URL: 'http://127.0.0.1:21971' }, ...log('chat-eve') },
+    { name: 'shillcheck-chat', script: 'chat/server.mjs', node_args: ['--env-file-if-exists=.env'], ...base, ...log('chat') },
     { name: 'shillcheck-api', script: 'agent-api.mjs', node_args: ['--env-file-if-exists=.env', '--env-file-if-exists=.local/mps-runtime.env'], ...base, ...log('api') },
     // Exactly one worker: it also takes a lock file, so a second instance would refuse to start.
     { name: 'shillcheck-worker', script: 'worker.mjs', node_args: ['--env-file-if-exists=.env'], ...base, ...log('worker') },

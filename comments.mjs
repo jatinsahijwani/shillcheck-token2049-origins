@@ -1,10 +1,11 @@
 import {readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {client} from './client.mjs';
 import {loadSokosumiRuntime} from './sokosumi-runtime.mjs';
+import {readCoworkerKey} from './src/coworker-key.mjs';
 import {expandReportMarker} from './src/marker.mjs';
 import {dataDir} from './src/config.mjs';
-const {readRuntimeCredential,createCoworkerHttpClient,fetchTaskEvents,createTaskEvent}=await loadSokosumiRuntime();
-const runtime=createCoworkerHttpClient({apiKey:readRuntimeCredential(process.env.COWORKER_ID)});
+const {createCoworkerHttpClient,fetchTaskEvents,createTaskEvent}=await loadSokosumiRuntime();
+const runtime=createCoworkerHttpClient({apiKey:await readCoworkerKey(process.env.COWORKER_ID)});
 export async function reply(taskId){
  const p=`.local/${taskId}-comments.json`;
  const state=existsSync(p)?JSON.parse(readFileSync(p,'utf8')):{};

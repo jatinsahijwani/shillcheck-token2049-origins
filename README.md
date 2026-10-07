@@ -16,6 +16,23 @@ Processes (run from the repo root, Node 24+, `.env` filled from `.env.example`):
 Hand-check without the model: `npm run report -- "@a @b budget $10k asia"`. Offline fixtures: `SHILLCHECK_MOCK=true` (the worker and API refuse to start in mock mode).
 Tests: `npm test`.
 
+## Deployment (AWS)
+
+Production runs on one EC2 instance (Ubuntu 24.04, Elastic IP, encrypted EBS) under pm2:
+
+| Process | Role | Listens |
+|---|---|---|
+| `shillcheck-mps` | Masumi Payment Service, same wallets and registration | 127.0.0.1:38127 |
+| `shillcheck-eve` | Task agent | 127.0.0.1:21949 |
+| `shillcheck-api` | Masumi Standard API (registered URL) | 127.0.0.1:21950 |
+| `shillcheck-worker` | Task worker, exactly one | none |
+| `shillcheck-chat-eve` | chat agent | 127.0.0.1:21971 |
+| `shillcheck-chat` | Responses endpoint for chat | 127.0.0.1:21970 |
+
+Postgres 16 runs on the same host (loopback only). Caddy terminates HTTPS and forwards only `/c/*` to the chat endpoint; everything else returns 404. SSH is limited to the admin IP by the security group. The worker has no OS vault: it reads the Coworker key from a 600 file (`COWORKER_API_KEY_FILE`) and passes it to the Sokosumi CLI over stdin. A daily `pg_dump` and state archive stay under `~/backups` (7 kept).
+
+Update: `git pull && pm2 restart ecosystem.config.cjs --update-env`. Never run a second worker or a second MPS against the same wallet: stop the old host first.
+
 ## X cost and cache settings
 
 X reads cost money ($0.01 per user, $0.005 per post), so they are cached per handle and capped per report.
@@ -53,6 +70,16 @@ Notes for judges:
 - Reply-quality (bot) sampling only works for KOLs who posted in the last 7 days, because the X recent-search window is 7 days. Otherwise the report says so and does not adjust for bots.
 - Availability: the worker runs continuously from 7 Oct 2026 and is kept up at least through the prize ceremony on 8 Oct 2026 16:00 SGT.
 
+## Chat
+
+ShillCheck also works in Sokosumi chat (capability `chat` plus `tasks`). Ask in plain language:
+
+- `is @cobie worth $3K?` gives a quick verdict from cached data: Hire / Negotiate / Avoid, a fair price estimate, real vs bot reach, and how past promoted tokens performed. The verdict block is rendered by code, not written by the model.
+- `vet these 3: @a @b @c, budget $20K, Asia` returns the exact Task text to paste, which handles are cached, and what a live read would cost.
+- Follow-ups such as "why is the fair price that number?", "what does Negotiate mean?" or "assume a $20 CPM" are answered from the stored numbers.
+
+How it works: Sokosumi Core streams chat to `{baseURL}/responses` (OpenAI Responses format, server-sent events). `chat/server.mjs` implements that endpoint, rate limits per user, and keeps one conversation per chat in a second eve agent (`chat-agent/`) with its own prompt and two tools (`quick_check`, `plan_task`). Core sends no credential, so the registered base URL contains a secret path segment. Chat reads X from cache only unless `CHAT_X_LIVE=true`, and live reads stop at `CHAT_X_DAILY_USD` per day.
+
 ## Evidence (Cardano Preprod, verified paid Task)
 
 | Item | Value |
@@ -84,3 +111,21 @@ Blockchain identifier of the payment:
 ```
 1304e0cc01c00c0ec3620118c08c016108203631bb03180a6d8026019811229b6c0a14a31450429802181ddaa698b16c44d0056102261a0e2db36181d1140221801290453614adc4714cbb08a244454051cd0a0e11c8a11ed11de0696303089de9288ea188ee5255d1044bc4008a1c8891c6db021e1ddc9a988c55061c962508851c948202008c1b4408841c859caa000e8424510b9b040d11020d0d1e438c1b0692a5a4470403aa051819944218158514b100381c8383949811048fae28912eb252cbd8020b2895180f748c0e0094808439cfa60f827811720e4b5b1f0db810de1e0fa105889485c3aa64242061a74220174088d05708a3856017f2217244021714010469c91c3016b8596c23ca7c34172b80d4cde34491a06c0424134a874488f6900e2807c542207088aa3d2c9625a7820a446f7218c26d17c845f0387f1b85620973918ec0345784cca082e4407895731f2f2911802612567cdc889521f45c6e51485b90d1035a50fb2c54028883436a49d239bcc61b96d4c056e2345701884058c1c0106b015dc886414843a434ad4461330244de5eab8e55ebc7d82d34e87c9a04d50630106605711349044160812a1621bb64d3009940e87671a4da6b379a2d09863c8c036d40e36c18503d81c8e27338c0c9d7319dc9673a78415b7c0013801f4002e44003391e5000770017a9ed0244bf2844000b0035a5e88d7800db70005697900005b52000370011ca03dd20d3c00730003db06bd5f3c038102000723c608e9c84c2003b3392f34060a00000
 ```
+
+### Second paid Task, run from the AWS host
+
+Same Coworker, wallets and registration after the move to AWS (created 2026-10-06 20:23:51Z, completed 20:26:56Z, settled 21:11Z).
+
+| Item | Value |
+|---|---|
+| Paid Task ID | `01a112e3-09ce-74bb-a712-ad149da773c0` |
+| Payment event IDs | purchase: `01a112e3-36c0-757f-a147-445349156a78`; completion with result: `01a112e5-de2c-7088-84b9-3a934ee5a6a1` |
+| MPS payment request ID | `cmux4mlov00089sp9zvwgrrs4` |
+| Escrow transaction (FundsLocked) | [1bf9673b7b9ed316…](https://preprod.cardanoscan.io/transaction/1bf9673b7b9ed316f1a60a0bf4a56814a966d1ee14c3cfecd6a84c2bfb24cbd3) |
+| Result submission transaction | [4f87392ed1817f23…](https://preprod.cardanoscan.io/transaction/4f87392ed1817f2309692e6218b4781fe2e4c40bd1b290a36b7533c7140f0438) |
+| Collection / withdrawal transaction | [15fbbcf6d42f3948…](https://preprod.cardanoscan.io/transaction/15fbbcf6d42f39488a634e22cf58ff5b62a3c16ed7e859deeac23122a14f61c9) |
+| Seller address | `addr_test1qrk6ews727gjxc8lw9z5c58mr0hh477cajkznz2x0vtcfsptujyzdswdckd9qzlvu6qgzwfczecu555r3g5mzryw4ckqmkkh8s` |
+| Net tUSDM received (this transaction's seller output minus input) | **1 tUSDM (1000000 atomic units)** |
+| Core receipt vs `sokosumi runtime receipt` | match |
+| Result hash | `8d58b6e1389af4bddb51b94a7b88cbcf57c5d630055fa225726610c14b95aa0e` |
+| Blockchain identifier | `2b06601c08cc00c90c6043301d9904e24058c60131803335c004c023604e84340533315da4ce00d8083773304de00b264d1c5c086325ad0d2b6408cb4386971c1e7022b08b0d30041116b60b568c39093042404a041064a2e4cd192e5bb6a9de8c0301648f9c52a6168027a08425614105b02300663346408640208885a0802121c38104d3a34026822e2803a34272f4c0a2f74b05a2cfa106412b04c6030560c1068085c646676a64802b21f5c020404125c325a031c0918b2045f732a7c74da44dc7c1226e43812384a0776e41269e8513d8ee40d564c07e703642690769a22fade65b4e0745e88158c11f040da2c1800820b31f020040d44088d0603423d9076642b4e05759b60f0ac3521d8e1818341667039981603662240647a313e1c0085c1a03c703a82168ca5d2b0f91d249023ac007810da7822820f9c67e152e1ac2e0cd0a100c1cda67222348a960a9a60b8090a0d978709a1d89438102609ada568f594a3117fca4b910091d43a330b272362ab75d13644890adda270c4e0394b3226c7059279804c6051d30c8cc41ce8fd72323a0066032d6868306c5b498ae4e07a34512a00b049540d80f5b4086c825330f4db203e931b3b82804b86023184ca63339bb450b4258ad306b2b9d4d2db5dbec89277179d2ed7700b62e0027003e8005d6800677dc4000ee002f23e60e667c53000016006b33ed02f001b70c00accf68002d890001b8008ed036e6051e00398001eac05e4fa5a082010003bee904202001068400764d19e98241400000` |

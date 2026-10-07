@@ -12,7 +12,8 @@ import {priceWithPriceProof} from './priceproof-integration.mjs';
 import {decide,mergeConstraints} from './decide.mjs';
 import {renderReport} from './report.mjs';
 import {saveReport,loadReport} from './store.mjs';
-import {cacheDir,repoRoot} from './config.mjs';
+import {cacheDir,repoRoot,ledgerPath} from './config.mjs';
+import {createLedger} from './spend-ledger.mjs';
 import {join} from 'node:path';
 const DAY_MS=86400000;
 export function cleanHandles(raw){
@@ -68,12 +69,13 @@ async function collectKol(handle,{x,now,deadline}){
  if(kol.replies.status!=='ok')kol.couldNotVerify.push(`reply quality: ${kol.replies.reason}. Estimated real views are not adjusted for bot share`);
  return kol;
 }
-export function createDeps({env=process.env,fetchImpl=fetch,now=Date.now(),sleep,cache:sharedCache,priceProof}={}){
+export function createDeps({env=process.env,fetchImpl=fetch,now=Date.now(),sleep,cache:sharedCache,priceProof,ledger:sharedLedger}={}){
  const mock=isMock(env),cap=limits(env);
  const cache=sharedCache??createCache({dir:mock?undefined:cacheDir(env)});
+ const ledger=sharedLedger??createLedger({path:mock?undefined:ledgerPath(env)});
  const xBudget=createBudget({max:cap.maxXCalls,label:'X API'}),cgBudget=createBudget({max:cap.maxCoinGeckoCalls,label:'CoinGecko'});
- return {mock,now,cache,limits:cap,priceProof:priceProof??priceProofFromEnv(env,fetchImpl),
-  x:createXClient({bearer:env.X_BEARER_TOKEN,fetchImpl,cache,budget:xBudget,sleep,maxCostUsd:cap.maxXCostUsd,ttlMs:ttlFromEnv(env),liveAllowed:env.X_LIVE_ALLOWED!=='false'}),
+ return {mock,now,cache,ledger,limits:cap,priceProof:priceProof??priceProofFromEnv(env,fetchImpl),
+  x:createXClient({bearer:env.X_BEARER_TOKEN,fetchImpl,cache,budget:xBudget,sleep,maxCostUsd:cap.maxXCostUsd,ttlMs:ttlFromEnv(env),liveAllowed:env.X_LIVE_ALLOWED!=='false',ledger,dailyCapUsd:cap.xDailyCapUsd,source:env.X_SPEND_SOURCE||'task'}),
   cg:createCoinGecko({apiKey:env.COINGECKO_API_KEY,fetchImpl,cache,budget:cgBudget,ratePerMin:cap.coingeckoRatePerMin,sleep}),
   llama:createDefiLlama({fetchImpl,cache,sleep})};
 }

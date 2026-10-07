@@ -3,8 +3,11 @@ import {readFileSync,existsSync,writeFileSync} from 'node:fs';
 import {parseEnv} from 'node:util';
 import {verifySettlement} from './settlement.mjs';
 import {loadSokosumiRuntime,runtimeReceipt} from './sokosumi-runtime.mjs';
+import {readCoworkerKey,runtimeCliAuth} from './src/coworker-key.mjs';
 import {loadRegistration} from './src/registration.mjs';
 const MINUTE=60*1000;
+export const MODEL_ATTEMPTS=3;
+const MODEL_RETRY_MARGIN_MS=3*MINUTE;
 export const USDM='16a55b2a349361ff88c03788f93e1e966e5d689605d044fef722ddde0014df10745553444d';
 export function taskHash(text){return createHash('sha256').update(text,'utf8').digest('hex')}
 export function confirmedState(payment,expected){
@@ -34,8 +37,8 @@ export async function createPaidAdapter({save,answer,core:providedCore,mps:provi
  const registration=()=>providedRegistration??loadRegistration();
  let core=providedCore;
  async function getCore(){
-  if(!core){const {readRuntimeCredential,createCoworkerHttpClient}=await loadSokosumiRuntime();
-   core=createCoworkerHttpClient({apiKey:readRuntimeCredential(process.env.COWORKER_ID)});}
+  if(!core){const {createCoworkerHttpClient}=await loadSokosumiRuntime();
+   core=createCoworkerHttpClient({apiKey:await readCoworkerKey(process.env.COWORKER_ID)});}
   return core;
  }
  async function mps(path,body){
@@ -76,13 +79,20 @@ export async function createPaidAdapter({save,answer,core:providedCore,mps:provi
     if(Date.now()>=Number(p.payment.submitResultTime))throw new Error('Result deadline expired before model');
     state=await persist(task,state,{...p,stage:'model-pending'});
     if(Date.now()>=Number(p.payment.submitResultTime))throw new Error('Result deadline expired before model send');
-    const result=await answer(state.input,`.local/${task.id}-session.json`,Number(p.payment.submitResultTime));
+    // The model call has no external side effects, so a failed call may be retried while there is time before the deadline.
+    let result;
+    try{result=await answer(state.input,`.local/${task.id}-session.json`,Number(p.payment.submitResultTime))}
+    catch(error){
+     const attempts=(p.modelAttempts??0)+1;
+     if(attempts<MODEL_ATTEMPTS&&Date.now()+MODEL_RETRY_MARGIN_MS<Number(p.payment.submitResultTime))return persist(task,state,{...p,stage:'awaiting-escrow',modelAttempts:attempts,modelError:String(error.message).slice(0,120)});
+     throw error;
+    }
     if(typeof result!=='string'||!result.trim())throw new Error('Model did not return a result');
     writeFileSync(`.local/${task.id}.txt`,result,{mode:0o600});
     return persist(task,state,{...p,stage:'result-saved',result,resultHash:taskHash(result)});
    }
    if(p.stage==='awaiting-result'&&observed.resultHash===p.resultHash&&confirmedState(observed,'ResultSubmitted')&&observed.onChainState==='ResultSubmitted')return persist(task,state,{...p,stage:'complete-ready'});
-   if(p.stage==='awaiting-withdrawal'&&['Withdrawn','DisputedWithdrawn'].includes(observed.onChainState)){const evidence=await verifySettlement({core:await getCore(),taskId:task.id,payment:observed,sellerAddress:registration().registration?.SmartContractWallet?.walletAddress,unit:USDM,cliReceipt:cliReceipt??(id=>runtimeReceipt(id,process.env.COWORKER_ID))});return persist(task,state,{...p,stage:evidence.verified?'settled':'awaiting-withdrawal',settlement:evidence});}
+   if(p.stage==='awaiting-withdrawal'&&['Withdrawn','DisputedWithdrawn'].includes(observed.onChainState)){const evidence=await verifySettlement({core:await getCore(),taskId:task.id,payment:observed,sellerAddress:registration().registration?.SmartContractWallet?.walletAddress,unit:USDM,cliReceipt:cliReceipt??(id=>runtimeReceipt(id,process.env.COWORKER_ID,undefined,runtimeCliAuth()))});return persist(task,state,{...p,stage:evidence.verified?'settled':'awaiting-withdrawal',settlement:evidence});}
    return state;
   }
   if(p.stage==='result-saved'){

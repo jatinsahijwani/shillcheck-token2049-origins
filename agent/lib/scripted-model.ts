@@ -18,7 +18,32 @@ function toolReportIds(prompt: any[]): string[] {
   }
   return ids;
 }
+function planChat(prompt: any[]) {
+  const last = prompt[prompt.length - 1];
+  const lastResult = [...prompt].reverse().flatMap((m: any) => m.content ?? []).find((p: any) => p.type === 'tool-result');
+  const body = lastResult ? (typeof lastResult.output?.value === 'string' ? lastResult.output.value : JSON.stringify(lastResult.output?.value)) : '';
+  if (last?.role === 'tool') {
+    if (lastResult?.toolName === 'plan_task') {
+      const t = /"task_text":"((?:[^"\\]|\\.)*)"/.exec(body)?.[1] ?? '';
+      return { text: `Here is the Task text:\n\n\`\`\`\n${JSON.parse(`"${t}"`)}\n\`\`\`` };
+    }
+    const id = /rpt_[0-9a-f]{12}/.exec(body)?.[0];
+    const fee = /"asked_fee_usd":(\d+(?:\.\d+)?)/.exec(body)?.[1];
+    return { text: `Quick check:\n[[SHILLCHECK_QUICK:${id}${fee ? `:fee=${fee}` : ''}]]` };
+  }
+  const user = textOf([...prompt].reverse().find((m) => m.role === 'user'));
+  const handles = [...user.matchAll(/@([A-Za-z0-9_]{1,15})/g)].map((m) => m[1]);
+  if (handles.length > 1) return { tool: { name: 'plan_task', input: { handles } } };
+  if (handles.length === 1) {
+    const fee = /\$\s*(\d+(?:\.\d+)?)\s*(k)?/i.exec(user);
+    const input: any = { handle: handles[0] };
+    if (fee) input.fee_usd = Number(fee[1]) * (fee[2] ? 1000 : 1);
+    return { tool: { name: 'quick_check', input } };
+  }
+  return { text: 'Hi! I can check whether a crypto KOL on X is worth paying. Try: "is @name worth $3K?"' };
+}
 function plan(prompt: any[]) {
+  if (process.env.SHILLCHECK_SCRIPTED_KIND === 'chat') return planChat(prompt);
   const last = prompt[prompt.length - 1];
   const ids = toolReportIds(prompt);
   if (last?.role === 'tool') return { text: `Assumptions: scripted model, defaults stated in the report.\n[[SHILLCHECK_REPORT:${ids[ids.length - 1]}]]` };
