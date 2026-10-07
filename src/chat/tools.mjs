@@ -21,7 +21,7 @@ export function chatSpendToday(dir,since=dayStart()){
 export function chatEnv(env=process.env,dir=dataDir(env)){
  const dailyCap=Number(env.CHAT_X_DAILY_USD)>0?Number(env.CHAT_X_DAILY_USD):2;
  const live=env.CHAT_X_LIVE==='true'&&env.X_LIVE_ALLOWED!=='never'&&chatSpendToday(dir)<dailyCap;
- return {...env,X_LIVE_ALLOWED:live?'true':'false',SHILLCHECK_MAX_X_COST_USD:env.CHAT_X_REPORT_USD||'1'};
+ return {...env,X_LIVE_ALLOWED:live?'true':'false',SHILLCHECK_MAX_X_COST_USD:env.CHAT_X_REPORT_USD||'1',X_SPEND_SOURCE:'chat'};
 }
 export async function quickCheck(input,sessionId,{env=process.env,fetchImpl,now=Date.now()}={}){
  const handle=normalizeHandle(input.handle);
