@@ -40,7 +40,7 @@ test('happy path: product read, real creators, code-made budget, unvetted labels
  assert.doesNotMatch(out,/tiny_fan|nike_official_store|kickdaily/); // too small, brand by name, verified business
  assert.match(out,/Not yet vetted: run a full ShillCheck vet/);
  assert.match(out,/Competitors \(AI-suggested\)/);assert.match(out,/Instagram \| Coming soon/);
- assert.match(out,/\| Micro \|/);assert.match(out,/\| Mid \|/);
+ assert.match(out,/\| Mid \|/); // only tiers with a shortlisted creator get budget
  assert.match(out,/Reserve/);assert.match(out,/## Could not verify/);assert.match(out,/## What ShillCheck will add next/);
  // an image_url part was really sent to the model
  assert.ok(llm.calls[0][1].content.some(p=>p.type==='image_url'&&p.image_url.url.startsWith('data:image/png;base64,')));
