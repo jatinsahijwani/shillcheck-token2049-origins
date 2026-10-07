@@ -1,84 +1,138 @@
-# shillcheck-token2049-origins
-## ShillCheck agent
+# ShillCheck
 
-Crypto KOL vetting Coworker for Sokosumi / Masumi (Cardano Preprod). X handles + budget in, ranked Hire / Negotiate / Avoid report out.
-All numbers come from deterministic code in `src/`. The model only picks tool arguments and writes a short assumptions note plus a
-`[[SHILLCHECK_REPORT:<id>]]` marker; `client.mjs` and `comments.mjs` expand that marker into the stored markdown before the result is saved and hashed.
+**Is this crypto influencer worth paying?** ShillCheck is an AI Coworker on [Sokosumi](https://preprod.sokosumi.com) (Cardano Preprod, Masumi standard) for crypto marketing and growth teams. Send it up to 10 X handles and a budget, or just ask in chat, and it returns a ranked **Hire / Negotiate / Avoid** report: real vs bot reach, every token each KOL promoted before and what its price did 7 and 30 days after, red flags stated as facts, a fair price for each, and a budget split. Every number links to the X post or CoinGecko page it came from.
 
-Processes (run from the repo root, Node 24+, `.env` filled from `.env.example`):
+Built for the TOKEN2049 Origins hackathon (Cardano / Masumi / Sokosumi track).
 
-| Process | Command | Listens |
+| | |
+|---|---|
+| Coworker | **ShillCheck**, ID `01a10fe8-b25e-7046-9654-3a122a0763ea` (capabilities: `tasks`, `chat`) |
+| Availability | **Live from 7 Oct 2026 until at least the 8 Oct 2026 16:00 SGT prize ceremony.** Always-on on AWS; a health check restarts any dead process within 5 minutes. |
+| Payment | 1 test tUSDM per Task through Masumi escrow on Cardano Preprod; verified settlements below |
+| Code | this repository (public, no secrets in it) |
+
+## How to try it (2 minutes)
+
+### Chat (no payment)
+In Sokosumi start a chat with **ShillCheck** and ask:
+
+- `is @cobie worth $3K?` returns a quick verdict from cached data: Hire / Negotiate / Avoid, an estimated fair price, real vs bot reach and how past promoted tokens performed. The verdict block is produced by code, so the numbers are exact.
+- `check @0xngmi` works without a price.
+- `vet these 3: @cobie @0xngmi @jatinsahijwani1, budget $20K, Asia` returns the exact Task text to paste, which handles are already cached (instant and free) and what a live read would cost.
+- Follow-ups: `why is the fair price that number?`, `what does Negotiate mean?`, `assume a $20 CPM`.
+
+Chat reads X from cache only, so it is instant and costs nothing; a handle that is not cached is reported honestly instead of guessed.
+
+### Task (full report)
+1. In Sokosumi create a Task for **@ShillCheck** (Personal Workspace or the TOKEN2049 workspace) and paste:
+
+   `Vet @cobie @0xngmi @jatinsahijwani1 for a DeFi launch in Asia. Budget $20K.`
+
+2. Approve the **1 tUSDM** quote. The Coworker starts only after the escrow is confirmed on chain.
+3. The report arrives in the Task in about 20 to 60 seconds: ranked summary table, three takeaways, one section per KOL, the budget split with the unallocated remainder, a **Could not verify** section and a source link for every number.
+4. Reply with a change, for example `drop anyone above $5K, focus on Asia`. You get a compact re-ranked table and budget split, earlier constraints are kept, and the paid result and its hash never change.
+
+Handles beyond the pre-fetched ones are read live from X (about $0.5 each, capped per report and per day). If a cap is reached, the report still returns what it can and labels the rest **could not verify**. Unknown handles say "not found"; a Task with no handles returns a usage guide; a data-source outage gives a partial report that says what failed.
+
+## Verified on chain
+
+Two paid Tasks were run end to end and settled; the full evidence (Task IDs, payment event IDs, blockchain identifiers, escrow, result and collection transactions with cardanoscan links, seller address, tUSDM unit, net amount) is in the tables at the bottom.
+
+| Run | Host | Task ID | Net to seller |
+|---|---|---|---|
+| Paid Task 1 | developer laptop | `01a1127f-ed96-703b-b4d8-a696700e84d3` | 1 tUSDM |
+| Paid Task 2 | AWS (after migration, same wallet and registration) | `01a112e3-09ce-74bb-a712-ad149da773c0` | 1 tUSDM |
+| Task in the TOKEN2049 workspace (free path, `--organization-slug`) | AWS | `01a11465-9b9d-70ad-895d-ee95d3dde0a3` | n/a (completed in 40 s, follow-up reply in 8 s) |
+
+Each settlement was proven three ways: Core receipt, the MPS withdrawal transaction, `sokosumi runtime receipt`, and an independent Blockfrost read of that transaction's seller input and output (the seller wallet already held tUSDM, so the net is measured per transaction, never from a balance).
+
+## What it checks
+
+| | Rule |
+|---|---|
+| Real reach | Median views of the last 50 original posts (not the mean, so one viral post cannot inflate it), engagement rate, view rate |
+| Bot estimate | Up to 30 recent repliers sampled. A replier is bot-like with 2 or more of: account under 90 days, default avatar, under 10 followers, generic hype-only text, duplicate text. Labelled an **estimate**; needs a post from the last 7 days (X recent search limit) |
+| Promotion track record | Posts with `$TICKER`, EVM or Solana contract addresses (majors excluded), up to 8 coins per KOL. Price at the post, +7 and +30 days from CoinGecko (DefiLlama fallback for contracts); 30-day outcomes are pending for posts under 30 days old |
+| Fair price | `median views x (1 - bot share) / 1000 x CPM ($15 default) x outcome multiplier` (1.0, 0.75 or 0.5 by past token results). The formula and inputs are printed in the report |
+| Avoid | 40% or more bot-like repliers, or 2+ promoted tokens down over 70% at 30 days, or median 30-day change -50% or worse across 3+ priced tokens |
+| Negotiate | 20-40% bot-like, engagement under 0.2% of followers, a contract-address post without a disclosure word, median 30-day change -20% to -50%, or a quoted fee above 1.5x fair price |
+| Hire | no rule fired |
+| Language | Facts only ("fell 74% within 30 days of the post"), never accusations |
+
+## Architecture
+
+```mermaid
+flowchart LR
+  U[User in Sokosumi] -->|Task| C[Sokosumi Core]
+  U -->|Chat| C
+  C -->|quote + escrow| M[(Masumi Payment Service\nCardano Preprod)]
+  C -->|chat: POST /responses over HTTPS| CH[Chat endpoint\nCaddy + rate limits]
+  W[Worker\none instance, journaled] -->|poll, start, complete, comments| C
+  W -->|FundsLocked confirmed| E[eve agent\nGemini + 2 tools]
+  CH --> CE[chat eve agent\nGemini + 2 tools]
+  E --> P[Deterministic pipeline\nsrc/]
+  CE --> P
+  P --> X[X API v2\ncached + capped]
+  P --> G[CoinGecko / DefiLlama]
+  E -->|result hash| M
+  M -->|payout after unlock| S[Seller wallet]
+```
+
+- **The model never types a number.** Tools run deterministic code in `src/` (X client, promotion detection, bot scoring, pricing, verdict rules, budget split, report renderer). The model only chooses tool arguments and writes a one-line assumptions note plus a marker; the system replaces the marker with the stored report **before** the result is saved and hashed.
+- **Payment rules from the Masumi guide are kept**: one worker, a journal for every stage, uncertain writes are never retried automatically, the model runs only after the escrow is confirmed on chain, the exact result bytes are hashed and submitted before the Task is completed, settlement is proven independently.
+- **Safety**: fetched posts, bios and tool output are treated as untrusted data; tools return numbers and ids only; the chat endpoint has a secret path, rate limits and a concurrency cap; X spend is capped per report, per day and per chat.
+- **Operations**: pm2 on a single EC2 host (MPS, Task agent, Standard API, worker, chat agent, chat endpoint) with Postgres on the same host, HTTPS by Caddy, a 5-minute health check that restarts dead processes, daily encrypted backups.
+
+## Tech
+
+Masumi (Payment Service, Standard API with MIP-004 nonce-prefixed hashing, registry) and Sokosumi Coworker runtime; Cardano Preprod with tUSDM escrow; [eve](https://www.npmjs.com/package/eve) agents with `ai` and `@ai-sdk/openai-compatible` on Google Gemini (with model fallback); X API v2; CoinGecko and DefiLlama price data; Node 24, Postgres 16, Caddy, pm2, AWS EC2.
+
+
+## Run it yourself
+
+```sh
+cp .env.example .env        # fill X_BEARER_TOKEN, COINGECKO_API_KEY, ZAI_* (any OpenAI-compatible model), BLOCKFROST_API_KEY_PREPROD, COWORKER_ID
+npm ci
+npm test                    # 124 tests, no network
+npm run report -- "@a @b budget $10k asia"   # full pipeline without the model, for hand-checking
+SHILLCHECK_MOCK=true npm run report -- "@demo_alpha @demo_pumper @demo_ghost budget $20k"   # offline fixtures
+npm start                   # eve Task agent (127.0.0.1:21949)
+npm run api                 # Masumi Standard API (127.0.0.1:21950)
+npm run worker              # Task worker, exactly one
+```
+
+The Masumi Payment Service, wallets, registration and the Sokosumi Coworker setup are described in the Masumi `AGENTS.md` guide; this repo adds the agent, the worker adaptations and the scripts in `scripts/`.
+
+## X cost and cache settings
+
+X reads cost money ($0.01 per user, $0.005 per post), so reads are cached per handle and capped.
+
+| Setting | Judge / demo value | Meaning |
 |---|---|---|
-| eve agent | `npm start` | 127.0.0.1:21949 |
-| Standard API (registered URL) | `npm run api` | 127.0.0.1:21950 |
-| Task worker (one instance, lock file) | `npm run worker` | none |
+| `X_CACHE_TTL_HOURS` | 120 | How long a cached X read is served |
+| `X_LIVE_ALLOWED` | true (Tasks) | false = cache only; a miss is "could not verify" and costs nothing |
+| `SHILLCHECK_MAX_X_COST_USD` | 6 | Estimated live X spend allowed per report |
+| `X_DAILY_CAP_USD` | 25 | Estimated live X spend per UTC day across all Tasks and chats (shared ledger); past it only cached data is served |
+| `CHAT_X_LIVE` / `CHAT_X_DAILY_USD` | false / 5 | Chat is cache-only; if enabled, live reads stop at this daily amount |
 
-Hand-check without the model: `npm run report -- "@a @b budget $10k asia"`. Offline fixtures: `SHILLCHECK_MOCK=true` (the worker and API refuse to start in mock mode).
-Tests: `npm test`.
+CoinGecko and DefiLlama answers are cached permanently.
 
 ## Deployment (AWS)
 
-Production runs on one EC2 instance (Ubuntu 24.04, Elastic IP, encrypted EBS) under pm2:
+One EC2 host (Ubuntu 24.04, Elastic IP, encrypted EBS) runs everything under pm2; Postgres 16 is on the same host (loopback only), Caddy terminates HTTPS and forwards only `/c/*` to the chat endpoint.
 
 | Process | Role | Listens |
 |---|---|---|
-| `shillcheck-mps` | Masumi Payment Service, same wallets and registration | 127.0.0.1:38127 |
+| `shillcheck-mps` | Masumi Payment Service (same wallets and registration) | 127.0.0.1:38127 |
 | `shillcheck-eve` | Task agent | 127.0.0.1:21949 |
 | `shillcheck-api` | Masumi Standard API (registered URL) | 127.0.0.1:21950 |
 | `shillcheck-worker` | Task worker, exactly one | none |
 | `shillcheck-chat-eve` | chat agent | 127.0.0.1:21971 |
 | `shillcheck-chat` | Responses endpoint for chat | 127.0.0.1:21970 |
 
-Postgres 16 runs on the same host (loopback only). Caddy terminates HTTPS and forwards only `/c/*` to the chat endpoint; everything else returns 404. SSH is limited to the admin IP by the security group. The worker has no OS vault: it reads the Coworker key from a 600 file (`COWORKER_API_KEY_FILE`) and passes it to the Sokosumi CLI over stdin. A daily `pg_dump` and state archive stay under `~/backups` (7 kept).
+The worker has no OS vault on the server: it reads the Coworker key from a 600 file and passes it to the Sokosumi CLI over stdin. Never run a second worker or a second MPS against the same wallet.
 
-Update: `git pull && pm2 restart ecosystem.config.cjs --update-env`. Never run a second worker or a second MPS against the same wallet: stop the old host first.
-
-## X cost and cache settings
-
-X reads cost money ($0.01 per user, $0.005 per post), so they are cached per handle and capped per report.
-
-| Setting | Testing (now) | Demo / judges | Meaning |
-|---|---|---|---|
-| `X_CACHE_TTL_HOURS` | 48 | raise as needed | How long a cached X read is served |
-| `SHILLCHECK_MAX_X_COST_USD` | 1 | raise as needed (default 8) | Estimated live X spend allowed per report; the rest is "could not verify" |
-| `X_LIVE_ALLOWED` | false | true | false = cache only; a miss is reported as "could not verify" and costs nothing |
-
-CoinGecko and DefiLlama answers are cached permanently.
-
-## How judges can try it
-
-ShillCheck is the Coworker **ShillCheck** on [preprod.sokosumi.com](https://preprod.sokosumi.com) (Cardano Preprod, Masumi Standard API, tUSDM).
-
-1. Open Sokosumi Preprod, go to your Personal Workspace (or the TOKEN2049 workspace) and create a Task for **@ShillCheck**.
-2. Paste this sample Task:
-
-   ```
-   Vet @cobie @0xngmi @jatinsahijwani1 for a DeFi launch in Asia. Budget $20K.
-   ```
-
-3. Approve the quote: **1 tUSDM** is locked in escrow. The Coworker starts only after the escrow is confirmed on chain.
-4. In about 20 seconds the Task completes with the full report:
-   - a ranked Hire / Negotiate / Avoid table, three takeaways, then one section per KOL;
-   - real vs bot reach (clearly labelled estimates), past token promotions with price at the post, +7 days and +30 days, red flags stated as facts, and a fair price with its formula;
-   - a budget split with the unallocated remainder, a "Could not verify" section, and a source link for every number (x.com post or CoinGecko page).
-5. Add a comment such as `drop anyone above $5K, focus on Asia`. The Coworker replies with a compact re-ranked table and budget split and lists the constraints now active. Earlier constraints are kept, and the paid result and its hash never change.
-6. Try failure paths: an unknown handle is reported as "not found", an empty or handle-less Task returns a usage guide, and a data-source outage gives a partial report with the failure labelled.
-
-Notes for judges:
-
-- The three sample handles are pre-fetched, so the sample Task costs no extra X API spend. Other handles are fetched live from X when live reads are enabled (see the cost settings above); otherwise they are reported as "could not verify".
-- Reply-quality (bot) sampling only works for KOLs who posted in the last 7 days, because the X recent-search window is 7 days. Otherwise the report says so and does not adjust for bots.
-- Availability: the worker runs continuously from 7 Oct 2026 and is kept up at least through the prize ceremony on 8 Oct 2026 16:00 SGT.
-
-## Chat
-
-ShillCheck also works in Sokosumi chat (capability `chat` plus `tasks`). Ask in plain language:
-
-- `is @cobie worth $3K?` gives a quick verdict from cached data: Hire / Negotiate / Avoid, a fair price estimate, real vs bot reach, and how past promoted tokens performed. The verdict block is rendered by code, not written by the model.
-- `vet these 3: @a @b @c, budget $20K, Asia` returns the exact Task text to paste, which handles are cached, and what a live read would cost.
-- Follow-ups such as "why is the fair price that number?", "what does Negotiate mean?" or "assume a $20 CPM" are answered from the stored numbers.
-
-How it works: Sokosumi Core streams chat to `{baseURL}/responses` (OpenAI Responses format, server-sent events). `chat/server.mjs` implements that endpoint, rate limits per user, and keeps one conversation per chat in a second eve agent (`chat-agent/`) with its own prompt and two tools (`quick_check`, `plan_task`). Core sends no credential, so the registered base URL contains a secret path segment. Chat reads X from cache only unless `CHAT_X_LIVE=true`, and live reads stop at `CHAT_X_DAILY_USD` per day.
+Monitoring: cron runs `scripts/healthcheck.mjs` every 5 minutes (process state, MPS, API, eve, chat, worker heartbeat, Gemini reachability), restarts a dead or unhealthy process (at most 3 times an hour) and writes `status.json`. `scripts/aws.sh health` prints it from a laptop; `scripts/aws.sh status-url` gives an HTTPS status URL. Daily `pg_dump` and state archives are kept on the host and pulled, encrypted, to the laptop by `scripts/pull-backups.sh`.
 
 ## Evidence (Cardano Preprod, verified paid Task)
 
