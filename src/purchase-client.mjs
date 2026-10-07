@@ -61,12 +61,12 @@ export async function buyPriceProof({lookups,config,deps}){
   throw new PriceProofError('purchase outcome unknown; inspect the journal and the purchasing wallet before any retry',{stage:'purchase',kind:'uncertain'});
  }
  write({stage:'awaiting-escrow',purchaseId:purchase?.id??null});
- let escrowTx=null,transient=0;
+ let escrowTx=null,lastPollError=null;
  while(now()<deadline){
   await sleep(pollMs);
   let state;
   try{state=await mps('/purchase/resolve-blockchain-identifier',{network:'Preprod',blockchainIdentifier:job.blockchainIdentifier,includeHistory:'true'})}
-  catch{if(++transient>20)break;continue}
+  catch(error){lastPollError=String(error?.message??error).slice(0,160);continue}
   const history=[state.CurrentTransaction,...(state.TransactionHistory||[])].filter(Boolean);
   const locked=history.find(t=>t.status==='Confirmed'&&t.newOnChainState==='FundsLocked');
   if(locked&&!escrowTx){escrowTx=locked.txHash;write({stage:'awaiting-result',escrowTx})}
@@ -82,6 +82,6 @@ export async function buyPriceProof({lookups,config,deps}){
   write({stage:'result-verified',evidence});
   return {rows,evidence};
  }
- write({stage:'timed-out'});
+ write({stage:'timed-out',lastPollError});
  throw new PriceProofError(`no verified result within ${Math.round(timeoutMs/1000)}s; escrowed funds, if any, are recoverable via the purchase refund flow`,{stage:escrowTx?'awaiting-result':'awaiting-escrow',kind:'timeout'});
 }
