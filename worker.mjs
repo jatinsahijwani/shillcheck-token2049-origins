@@ -21,7 +21,8 @@ async function listTasks(){
  listClient??=createCoworkerHttpClient({apiKey:await readCoworkerKey(id)});
  return (await fetchTasks(listClient,{coworkerId:id},AbortSignal.timeout(30000))).tasks;
 }
-await client.health();
+// eve restarts take 10 to 30 seconds (compile); wait for it instead of crashing.
+for(let attempt=0;;attempt++){try{await client.health();break}catch(error){if(attempt>=100)throw error;await new Promise(r=>setTimeout(r,3000))}}
 const paid=await createPaidAdapter({answer,save:async(taskId,state)=>writeFileSync(`.local/${taskId}.json`,JSON.stringify(state),{mode:0o600})});
 console.log('Continuous worker running',process.pid,'paid tasks enabled:',process.env.PAID_TASKS_ENABLED==='true');
 const beat=()=>{try{writeFileSync('.local/worker.heartbeat',String(Date.now()),{mode:0o600})}catch{}};
