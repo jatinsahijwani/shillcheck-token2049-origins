@@ -6,6 +6,8 @@ import {answer,client} from './client.mjs';
 import {reply,postComment} from './comments.mjs';
 import {postOnce,ackText,receiptText,handlesIn} from './src/notices.mjs';
 import {planTask} from './src/chat/tools.mjs';
+import {routeBrief} from './src/product/input.mjs';
+import {productModeEnabled} from './src/product/plan.mjs';
 import {createPaidAdapter,isPaidReady} from './paid-task.mjs';
 import {runtimeArgs,loadSokosumiRuntime} from './sokosumi-runtime.mjs';
 import {runtimeCliAuth,usesKeyFile,readCoworkerKey} from './src/coworker-key.mjs';
@@ -40,7 +42,7 @@ while(true){
  // Two separate comments, neither touches the result or its hash: an immediate acknowledgement and, after settlement, a receipt.
  // Only for Tasks that just arrived: never acknowledge an old Task that is being resumed or has been abandoned.
  if(state.phase==='started'&&!state.ack&&Date.now()-Date.parse(t.createdAt)<15*60000){
- await postOnce({journalPath:journal,flag:'ack',post:text=>postComment(t.id,text),build:j=>ackText({input:j.input,paid:process.env.PAID_TASKS_ENABLED==='true'&&isPaidReady(),uncached:planTask({handles:handlesIn(j.input)}).uncached_handles,priceProof:process.env.PRICEPROOF_ENABLED==='true'})});
+ await postOnce({journalPath:journal,flag:'ack',post:text=>postComment(t.id,text),build:j=>ackText({input:j.input,product:productModeEnabled()&&routeBrief(j.input)==='product',paid:process.env.PAID_TASKS_ENABLED==='true'&&isPaidReady(),uncached:planTask({handles:handlesIn(j.input)}).uncached_handles,priceProof:process.env.PRICEPROOF_ENABLED==='true'})});
  state=JSON.parse(readFileSync(journal,'utf8'));
  }
  if(state.paid?.stage==='settled'&&state.paid.settlement?.verified&&!state.receipt){

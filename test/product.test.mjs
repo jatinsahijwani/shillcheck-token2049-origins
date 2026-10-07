@@ -135,3 +135,9 @@ test('regression: the token path output is unchanged (golden report, id normalis
  if(!existsSync(golden))writeFileSync(golden,out);
  assert.equal(out,readFileSync(golden,'utf8'));
 });
+test('acknowledgement for a product brief does not mention a usage guide; token acks are unchanged',async()=>{
+ const {ackText}=await import('../src/notices.mjs');
+ assert.match(ackText({input:'plan for shoes',paid:true,product:true}),/product brief/);
+ assert.doesNotMatch(ackText({input:'plan for shoes',paid:true,product:true}),/usage guide/);
+ assert.match(ackText({input:'Vet @a',paid:false}),/vetting 1 handle/);
+});

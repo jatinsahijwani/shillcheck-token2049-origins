@@ -13,8 +13,9 @@ export function estimateMinutes({paid,uncached=0,priceProof=false}){
  return Math.max(1,m);
 }
 // Posted once, right after the Task starts. Plain facts about what happens next; no model involved.
-export function ackText({input,paid,uncached=[],priceProof=false}){
+export function ackText({input,paid,uncached=[],priceProof=false,product=false}){
  const handles=handlesIn(input);
+ if(product)return `On it (beta): reading your product brief, then one live X search for creators${paid?' after the 1 tUSDM escrow is confirmed on Cardano (about 3 to 4 minutes)':''}. Expect the plan in about ${paid?6:2} minutes.`;
  if(!handles.length)return 'On it: reading your request. If it contains no X handles you will get a short usage guide.';
  const minutes=estimateMinutes({paid,uncached:uncached.length,priceProof});
  const steps=paid?'Next: the 1 tUSDM quote, then the escrow is confirmed on Cardano (about 3 to 4 minutes), then your report.':'Your report follows.';
