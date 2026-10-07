@@ -25,7 +25,7 @@ export function parseResult(raw,count){
 // verify the on-chain result hash, then return sanitized rows. Every stage is journaled before and after its write.
 // A write whose outcome is unknown halts with kind "uncertain" and is never retried.
 export async function buyPriceProof({lookups,config,deps}){
- const {url,agentIdentifier,maxPriceAtomic='500000',timeoutMs=360000,pollMs=5000,journalDir}=config;
+ const {url,agentIdentifier,maxPriceAtomic='500000',timeoutMs=420000,pollMs=5000,journalDir}=config;
  const {mps,fetchImpl=fetch,sleep=ms=>new Promise(r=>setTimeout(r,ms)),now=Date.now}=deps;
  mkdirSync(journalDir,{recursive:true,mode:0o700});
  const id=randomUUID();

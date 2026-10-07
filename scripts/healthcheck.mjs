@@ -22,6 +22,10 @@ const results={
  'process:worker':processCheck('shillcheck-worker'),'process:chat-eve':processCheck('shillcheck-chat-eve'),'process:chat':processCheck('shillcheck-chat'),
 };
 const add=async(name,restart,fn)=>{const r=await wrap(fn);results[name]={...r,restart:r.ok?undefined:restart}};
+if(procs['shillcheck-priceproof']!==undefined){
+ results['process:priceproof']=processCheck('shillcheck-priceproof');
+ await add('priceproof','shillcheck-priceproof',()=>http(`http://127.0.0.1:${env.PRICEPROOF_PORT||21960}/availability`,async r=>({ok:r.ok,detail:`HTTP ${r.status}`})));
+}
 await add('mps-health','shillcheck-mps',()=>http(`${env.MPS_URL||'http://127.0.0.1:38127'}/api/v1/health`,async r=>{const j=await r.json();return {ok:r.ok&&j?.data?.status==='ok',detail:`HTTP ${r.status}`}}));
 await add('api','shillcheck-api',()=>http(`http://127.0.0.1:${env.AGENT_API_PORT||21950}/availability`,async r=>({ok:r.ok,detail:`HTTP ${r.status}`})));
 await add('eve','shillcheck-eve',async()=>{await new Client({host:env.EVE_URL||'http://127.0.0.1:21949'}).health();return {ok:true,detail:'health ok'}});

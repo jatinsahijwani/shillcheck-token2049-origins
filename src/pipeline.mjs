@@ -142,5 +142,5 @@ export function priceProofFromEnv(env,fetchImpl=fetch){
   if(!response.ok)throw new Error(`Payment service HTTP ${response.status}`);
   return data.data;
  };
- return {config:{url:env.PRICEPROOF_URL||'http://127.0.0.1:21960',agentIdentifier:env.PRICEPROOF_AGENT_IDENTIFIER,maxPriceAtomic:env.PRICEPROOF_MAX_PRICE_ATOMIC||'500000',timeoutMs:Number(env.PRICEPROOF_TIMEOUT_MS)||360000,journalDir:join(repoRoot,'.local','priceproof-purchases')},deps:{mps,fetchImpl}};
+ return {config:{url:env.PRICEPROOF_URL||'http://127.0.0.1:21960',agentIdentifier:env.PRICEPROOF_AGENT_IDENTIFIER,maxPriceAtomic:env.PRICEPROOF_MAX_PRICE_ATOMIC||'500000',timeoutMs:Number(env.PRICEPROOF_TIMEOUT_MS)||420000,journalDir:join(repoRoot,'.local','priceproof-purchases')},deps:{mps,fetchImpl}};
 }
