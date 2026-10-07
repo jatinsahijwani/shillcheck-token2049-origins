@@ -25,3 +25,8 @@ test('run fetches only what is not cached and respects the spend cap',async()=>{
  assert.equal(r.done.length,2,'stopped before the third handle');assert.match(logs.join('\n'),/stopping before @demo_ghost/);
  assert.ok(r.spent>0&&r.spent<=EST_HIGH*2+0.01);assert.ok(r.done.every(d=>d.status==='ok'));
 });
+test('each handle gets its own per-report cap, so a long list is not cut off by the cap of a single report',async()=>{
+ const e={...env(),SHILLCHECK_MAX_X_COST_USD:'1'};
+ const r=await run({handles:['demo_alpha','demo_pumper','demo_ghost'],maxUsd:20,env:e,fetchImpl:createMockFetch({now:NOW}),now:NOW,log:()=>{}});
+ assert.deepEqual(r.done.map(d=>d.status),['ok','ok','ok']);
+});

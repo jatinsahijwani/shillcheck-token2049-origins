@@ -26,10 +26,13 @@ export async function run({handles,maxUsd,dryRun,env=process.env,fetchImpl,now=D
  log(`to fetch (${p.todo.length}): ${p.todo.join(', ')||'none'}`);
  log(`estimated live X cost: $${p.low} to $${p.high}; cap $${maxUsd}`);
  if(dryRun)return {...p,spent:0,done:[]};
- const deps=createDeps({env:{...env,X_LIVE_ALLOWED:'true',X_SPEND_SOURCE:'prewarm'},now,fetchImpl:fetchImpl??(isMock(env)?createMockFetch({now}):fetch),cache});
+ // One deps object per handle: the per-report cost cap and call caps are per run, and each handle is its own run. Cache and ledger are shared.
+ const first=createDeps({env:{...env,X_LIVE_ALLOWED:'true',X_SPEND_SOURCE:'prewarm'},now,fetchImpl:fetchImpl??(isMock(env)?createMockFetch({now}):fetch),cache});
+ const depsFor=()=>createDeps({env:{...env,X_LIVE_ALLOWED:'true',X_SPEND_SOURCE:'prewarm'},now,fetchImpl:fetchImpl??(isMock(env)?createMockFetch({now}):fetch),cache,ledger:first.ledger});
  const done=[];let spent=0;
  for(const h of p.todo){
   if(spent+EST_HIGH>maxUsd){log(`stopping before @${h}: next worst case would pass the $${maxUsd} cap (spent $${spent.toFixed(2)})`);break}
+  const deps=depsFor();
   const before=deps.ledger.total('prewarm');
   const report=await vetKols({handles:[h]},{deps,dir:dataDir(env),sessionId:'prewarm'});
   const cost=deps.ledger.total('prewarm')-before;spent+=cost;
