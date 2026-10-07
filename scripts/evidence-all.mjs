@@ -7,7 +7,7 @@ import {readdirSync,readFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {sellerTokenNet} from '../settlement.mjs';
 import {USDM} from '../paid-task.mjs';
-export const link=h=>h?`[${h.slice(0,12)}…](https://preprod.cardanoscan.io/transaction/${h})`:'pending';
+export const link=(h,missing='pending')=>h?`[${h.slice(0,12)}…](https://preprod.cardanoscan.io/transaction/${h})`:missing;
 export function txsFromPayment(p){
  const all=[p.CurrentTransaction,...(p.TransactionHistory??[])].filter(t=>t?.status==='Confirmed'&&t.txHash);
  const find=state=>all.find(t=>t.newOnChainState===state)?.txHash??null;
@@ -32,7 +32,8 @@ async function main(){
  for(const {id,s} of tasks){
   const p=s.paid,t=txsFromPayment(p.observed??{});
   const status=p.stage==='settled'?'settled and verified':p.stage==='deadline-missed'?'not delivered (result deadline missed, no payout)':p.stage;
-  console.log(row([`\`${id}\``,status,link(t.escrow),link(t.result),link(t.collection),p.stage==='settled'?`+${Number(p.settlement.netAtomicUnits)/1e6} tUSDM`:'n/a']));
+  const none=p.stage==='deadline-missed'?'none':'pending'; // a Task that missed its deadline never gets a result or a payout
+  console.log(row([`\`${id}\``,status,link(t.escrow),link(t.result,none),link(t.collection,none),p.stage==='settled'?`+${Number(p.settlement.netAtomicUnits)/1e6} tUSDM`:'n/a']));
  }
  const dirPP=join(dir,'priceproof-purchases');
  if(!existsSync(dirPP)||!process.env.PRICEPROOF_MPS_TOKEN)return;
