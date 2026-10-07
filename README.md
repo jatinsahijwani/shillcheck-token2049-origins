@@ -11,6 +11,8 @@ Built for the TOKEN2049 Origins hackathon (Cardano / Masumi / Sokosumi track).
 | Payment | 1 test tUSDM per Task through Masumi escrow on Cardano Preprod; verified settlements below |
 | Code | this repository (public, no secrets in it) |
 
+Please note that the photo and product feature is still in beta.
+
 ## How to try it (2 minutes)
 
 ### Chat (no payment)
