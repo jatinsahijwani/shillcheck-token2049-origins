@@ -3,6 +3,7 @@
 #   scripts/aws.sh ssh [cmd...]   open a shell or run a command
 #   scripts/aws.sh status         pm2 process list and health checks
 #   scripts/aws.sh health         latest health-check result (cron, every 5 minutes) and recent restarts
+#   scripts/aws.sh status-url     print the HTTPS status URL (works from any device; the secret is in the path)
 #   scripts/aws.sh logs <name> [n]  last n lines of a process log (mps eve api worker chat chat-eve)
 #   scripts/aws.sh deploy         git pull and restart all processes (never run a second worker elsewhere)
 #   scripts/aws.sh allow-my-ip    replace the SSH rule with this machine's current public IP
@@ -15,6 +16,7 @@ case "${1:-}" in
   ssh) shift; remote "$@" ;;
   status) remote 'pm2 jlist | node -e "const j=JSON.parse(require(\"fs\").readFileSync(0,\"utf8\"));for(const p of j)console.log(p.name.padEnd(22),p.pm2_env.status.padEnd(8),\"restarts\",p.pm2_env.restart_time)"; curl -s -m5 localhost:38127/api/v1/health; echo; free -m | sed -n 2p; df -h / | tail -1' ;;
   health) remote 'node -e "const s=JSON.parse(require(\"fs\").readFileSync(process.env.HOME+\"/shillcheck/.local/health/status.json\",\"utf8\"));console.log(s.ts,s.overall.toUpperCase());for(const [k,c] of Object.entries(s.checks))console.log((c.ok?\"  ok  \":\"  FAIL\"),k.padEnd(18),c.detail);if(s.actions.length)console.log(\"actions:\",JSON.stringify(s.actions))"; echo --- recent problems; tail -n 5 ~/shillcheck/.local/health/health.log | cut -c1-240' ;;
+  status-url) echo "$CHAT_BASE_URL/status" ;;
   logs) remote "tail -n ${3:-60} ~/shillcheck/.local/logs/${2:?name}.out.log ~/shillcheck/.local/logs/${2}.err.log" ;;
   deploy) remote 'cd ~/shillcheck && git pull --ff-only && npm ci --silent && pm2 restart ecosystem.config.cjs --update-env' ;;
   allow-my-ip)
