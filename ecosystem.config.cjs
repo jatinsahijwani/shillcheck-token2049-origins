@@ -9,7 +9,9 @@ module.exports = {
     // Masumi Payment Service: same built tree, reads its own .env from its cwd. Loopback only.
     { name: 'shillcheck-mps', script: 'dist/index.js', cwd: path.resolve(root, '..', 'shillcheck-mps'), instances: 1, exec_mode: 'fork', autorestart: true, max_restarts: 20, min_uptime: '10s', restart_delay: 3000, ...log('mps') },
     // start.mjs only runs when it is the entry file, which pm2's fork wrapper hides, so run it with plain node.
-    { name: 'shillcheck-eve', script: process.execPath, args: ['--env-file-if-exists=.env', 'start.mjs'], interpreter: 'none', ...base, ...log('eve') },
+    { name: 'shillcheck-eve', script: process.execPath, args: ['--env-file-if-exists=.env', '--env-file-if-exists=.local/priceproof-purchase.env', 'start.mjs'], interpreter: 'none', ...base, ...log('eve') },
+    // PriceProof: separate deterministic Standard API on its own loopback port. Not started until it is registered.
+    { name: 'shillcheck-priceproof', script: 'priceproof/server.mjs', node_args: ['--env-file-if-exists=.env', '--env-file-if-exists=.local/priceproof-runtime.env'], ...base, ...log('priceproof') },
     // Chat: a second eve agent (chat-agent/) with its own prompt and tools, plus the Responses endpoint Sokosumi calls.
     { name: 'shillcheck-chat-eve', script: process.execPath, args: ['--env-file-if-exists=../.env', '../start.mjs'], interpreter: 'none', ...base, cwd: path.join(root, 'chat-agent'), env: { EVE_PORT: '21971', EVE_URL: 'http://127.0.0.1:21971' }, ...log('chat-eve') },
     { name: 'shillcheck-chat', script: 'chat/server.mjs', node_args: ['--env-file-if-exists=.env'], ...base, ...log('chat') },

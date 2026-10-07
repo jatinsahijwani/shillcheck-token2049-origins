@@ -1,0 +1,66 @@
+PriceProof morning checklist (branch feat/priceproof). Nothing below has been run. Run from the repo root of the NEW
+code (the worktree ../shillcheck-priceproof, or main after merging). Stop at the first failure; do not retry a write
+whose outcome is uncertain, inspect first. Times are estimates on Preprod.
+
+0. Before anything on chain (10 min, no cost)
+   - Tests: `npm test` (106 pass expected) and `git diff main..feat/priceproof --stat` read-through.
+   - Back up first: re-run the encrypted wallet backup (pg_dump + .local + MPS .env). Setup adds a wallet mnemonic.
+   - Keep X cost controls as they are (X_LIVE_ALLOWED=false). PriceProof uses CoinGecko only; no X calls.
+   - Copy .env/.local needs into the worktree or merge to main first, so docs/ and .local/ resolve:
+       cp ../shillcheck-token2049-origins/.env .   (and symlink or copy .local and docs)
+
+1. Create and attach a SEPARATE selling wallet for PriceProof (2 min)
+   node --env-file=.env --env-file=.local/mps.env infra/priceproof-setup.mjs wallet
+   -> prints the new address. Mnemonic is saved to .local/priceproof-wallet.secret (600). Back up .local again.
+
+2. Fund (10-20 min, dispenser rate limits apply)
+   - PriceProof selling wallet address from step 1: ~10 test ADA (registration + fees). dispenser.masumi.network.
+   - ShillCheck PURCHASING wallet addr_test1qp2zzu3pe9nhpjw25mtjhltq4mnan8fq2r9gwdrhqh86wzl2hnzzru8pzhuwzyr9yg9258vuggqdznuxwwlmktky2jlsyve243:
+     ~20 test ADA and ~10 tUSDM (each report buys at 0.25 tUSDM; escrow also locks min ADA).
+   - Check: node --env-file=.env --env-file=.local/mps.env infra/priceproof-setup.mjs fund-check   (exit 0 = ready)
+
+3. Register PriceProof (2 min to submit, 1-3 min to confirm)
+   node --env-file=.env --env-file=.local/mps.env infra/priceproof-setup.mjs register
+   Pricing is Dynamic by default (the service quotes 0.25 tUSDM per job). To advertise a fixed price instead:
+   PRICEPROOF_PRICING=fixed ... register   (Fixed schema is untested; fall back to Dynamic if MPS rejects it).
+   node ... infra/priceproof-setup.mjs status      # repeat until RegistrationConfirmed
+   -> writes docs/priceproof-registration-state.json (agentIdentifier). Put the identifier in .env as
+      PRICEPROOF_AGENT_IDENTIFIER=<agentIdentifier>.
+
+4. Create the two scoped keys (1 min)
+   node ... infra/priceproof-setup.mjs key-selling      # .local/priceproof-runtime.env (PriceProof service only)
+   node ... infra/priceproof-setup.mjs key-purchasing   # .local/priceproof-purchase.env (ShillCheck purchases only)
+   Verify the printed evidence: canRead true, canPay true, canAdmin false, NetworkLimit [Preprod], walletScopeEnabled true,
+   exactly one wallet id each.
+
+5. Start PriceProof under pm2 (2 min). It does not touch the running ShillCheck processes.
+   pm2 start ecosystem.config.cjs --only shillcheck-priceproof
+   curl -s localhost:21960/availability ; curl -s localhost:21960/input_schema
+   (Registered apiBaseUrl is http://127.0.0.1:21960.)
+
+6. ONE standalone test purchase, outside any Task (10 min, ~0.25 tUSDM)
+   Use a small script around buyPriceProof with 2 lookups (e.g. bitcoin 2026-09-01, ethereum 2026-09-01):
+     node --env-file=.env --env-file=.local/priceproof-purchase.env -e "import('./src/purchase-client.mjs').then(async m=>{
+       const {priceProofFromEnv}=await import('./src/pipeline.mjs');
+       const pp=priceProofFromEnv({...process.env,PRICEPROOF_ENABLED:'true'});
+       console.log(JSON.stringify(await m.buyPriceProof({lookups:[{coin_id:'bitcoin',date:'2026-09-01'},{coin_id:'ethereum',date:'2026-09-01'}],config:pp.config,deps:pp.deps}),null,1))})"
+   Watch: journal in .local/priceproof-purchases/<id>.json goes start-job-pending -> job-started -> purchase-pending ->
+   awaiting-escrow -> awaiting-result -> result-verified. Expected ~4-8 minutes (escrow confirm ~2-3, result confirm ~1-2).
+   THINGS TO CONFIRM HERE (assumed from MPS /api-docs, not yet exercised):
+     a) /purchase accepts the Amounts + times from start_job and links to the seller's signed identifier.
+     b) /purchase/resolve-blockchain-identifier returns onChainState, resultHash and TransactionHistory like /payment does.
+     c) Escrow and result tx hashes appear in history (they feed the report line).
+   If (b) differs, fix src/purchase-client.mjs before step 7. If anything stalls, the client times out at 6 min and the
+   funds are recoverable via POST /purchase/request-refund (do that manually, not automatically).
+   After unlock + 10 min the PriceProof wallet's auto-withdraw collects 0.25 tUSDM; check its net delta via Blockfrost.
+
+7. One paid ShillCheck Task with PRICEPROOF_ENABLED=true (15 min)
+   - In .env: PRICEPROOF_ENABLED=true  (keep X_LIVE_ALLOWED=false; use the cached handles @cobie @0xngmi @jatinsahijwani1).
+   - pm2 restart shillcheck-eve --update-env   (eve runs the tools and holds the purchase key). Leave the worker alone.
+   - Create the Task in Sokosumi: "Vet @cobie @0xngmi @jatinsahijwani1 for a DeFi launch in Asia. Budget $20K."
+   - Expect: escrow ~2.5 min, one PriceProof purchase ~4-8 min, submit by ~12 min of the 20-minute window (8 min margin).
+   - The result must show "Verified by PriceProof (agent ...)" with the purchase identifier, escrow tx link and 0.25 tUSDM.
+   - If PriceProof is slow or fails, the report says "computed locally (PriceProof not used: <reason>)" and the Task still pays.
+   - Kill switch any time: PRICEPROOF_ENABLED=false then pm2 restart shillcheck-eve --update-env (back to v1 behaviour).
+
+Rollback: git checkout main in the main working dir (untouched tonight); the v1 state is tagged v1-paid-verified.

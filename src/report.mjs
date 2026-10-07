@@ -68,6 +68,13 @@ function kolSection(k,d,rank,constraints){
  s.push('',`**Verdict: ${d.verdict.label}.** ${d.verdict.reasons.length>1?d.verdict.reasons.join('; ')+'.':d.verdict.reason+'.'}`,'');
  return s;
 }
+const short=h=>h?`${String(h).slice(0,16)}…`:'n/a';
+const txLink=h=>h?L(short(h),`https://preprod.cardanoscan.io/transaction/${h}`):'n/a';
+function priceProofLine(pp){
+ if(!pp.used)return `**Price data:** computed locally (PriceProof not used: ${pp.reason??'no purchasable lookups'}).`;
+ const e=pp.evidence;
+ return `**Verified by PriceProof** (agent \`${short(e.agentIdentifier)}\`): ${pp.lookups} price lookups bought on chain for ${(Number(e.amountAtomic)/1e6).toFixed(2)} tUSDM. Purchase \`${short(e.blockchainIdentifier)}\` · escrow tx ${txLink(e.escrowTx)} · result tx ${txLink(e.resultTx)} · the result hash matched the on-chain commitment before use.${pp.local?` ${pp.local} lookup(s) computed locally.`:''}`;
+}
 export function renderReport(report){
  const {analyses,decision,constraints}=report;
  const dec=new Map(decision.decisions.map(d=>[d.handle,d]));
@@ -86,6 +93,7 @@ export function renderReport(report){
  if(constraints.exclude_handles?.length)assumptions.push(`Excluded by request: ${constraints.exclude_handles.map(h=>'@'+h).join(', ')}.`);
  assumptions.push(...report.notes);
  o.push('','**Assumptions**',...assumptions.map(a=>`- ${a}`));
+ if(report.priceProof)o.push('',priceProofLine(report.priceProof));
  const ranked=decision.ranked.map(h=>({d:dec.get(h),k:kol.get(h)}));
  const unrated=analyses.filter(k=>k.status!=='ok'&&!decision.excluded.some(e=>e.handle===k.handle));
  o.push('','## Summary','','| # | KOL | Verdict | Followers | Views median (mean) | Bot-like replies (est.) | Est. real views | Median 30-day | Fair price (est.) |','|---|---|---|---|---|---|---|---|---|');
