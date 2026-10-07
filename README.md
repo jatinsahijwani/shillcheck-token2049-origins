@@ -137,6 +137,31 @@ PriceProof settings (`PRICEPROOF_ENABLED`, `PRICEPROOF_TIMEOUT_MS`, `PRICEPROOF_
 
 Monitoring: cron runs `scripts/healthcheck.mjs` every 5 minutes (process state, MPS, API, eve, chat, worker heartbeat, Gemini reachability), restarts a dead or unhealthy process (at most 3 times an hour) and writes `status.json`. `scripts/aws.sh health` prints it from a laptop; `scripts/aws.sh status-url` gives an HTTPS status URL. Daily `pg_dump` and state archives are kept on the host and pulled, encrypted, to the laptop by `scripts/pull-backups.sh`.
 
+## Every paid Task and PriceProof purchase, with transactions
+
+Generated from the worker journals and MPS records by `scripts/evidence-all.mjs`; transaction links open on preprod.cardanoscan.io. "Seller net" is the seller wallet's tUSDM change in the collection transaction itself, read from Blockfrost (the wallet already held tUSDM, so balances are not used).
+
+### ShillCheck paid Tasks (1 test tUSDM each, paid by the Sokosumi buyer into Masumi escrow)
+
+| Task | Result | Escrow tx | Result tx | Collection tx | Seller net |
+|---|---|---|---|---|---|
+| `01a1127f-ed96-703b-b4d8-a696700e84d3` | settled and verified | [878ecf7c237e…](https://preprod.cardanoscan.io/transaction/878ecf7c237e17d2eece0497c2f28fc153a604ad1cc35a125371e31b6347f852) | [8f58107c69f4…](https://preprod.cardanoscan.io/transaction/8f58107c69f4f823d2495ac56730f87b94312cc61d4be48855b5a87688cff710) | [97299533cf63…](https://preprod.cardanoscan.io/transaction/97299533cf63a31565e6df32bd190ba3f605341763ea2d6c8b96b2a559dbbef1) | +1 tUSDM |
+| `01a112e3-09ce-74bb-a712-ad149da773c0` | settled and verified | [1bf9673b7b9e…](https://preprod.cardanoscan.io/transaction/1bf9673b7b9ed316f1a60a0bf4a56814a966d1ee14c3cfecd6a84c2bfb24cbd3) | [4f87392ed181…](https://preprod.cardanoscan.io/transaction/4f87392ed1817f2309692e6218b4781fe2e4c40bd1b290a36b7533c7140f0438) | [15fbbcf6d42f…](https://preprod.cardanoscan.io/transaction/15fbbcf6d42f39488a634e22cf58ff5b62a3c16ed7e859deeac23122a14f61c9) | +1 tUSDM |
+| `01a1148a-be53-7362-a387-35456a00015e` | not delivered (result deadline missed, no payout) | [807a8c78f245…](https://preprod.cardanoscan.io/transaction/807a8c78f245c876a58b03a9c6a37bda9bc373bd4a2df17d2d7f32b7832f7d92) | none | none | n/a |
+| `01a114ac-1ece-779b-b6f4-e22c501d50e3` | settled and verified | [128109ee3a44…](https://preprod.cardanoscan.io/transaction/128109ee3a44689bb5e1c9cd1e70e3032af0d1a20ee4be1782555ab667fb88cf) | [6335a2aca86a…](https://preprod.cardanoscan.io/transaction/6335a2aca86aa529c69cd70fd10c3a8b96932179778f703482534bfe560eb13d) | [ecea50254db1…](https://preprod.cardanoscan.io/transaction/ecea50254db18c1caa86ec7601a8da36ba557b0402044c09f93986cee2d73c9b) | +1 tUSDM |
+
+- `01a1127f…` ran on the developer laptop; `01a112e3…` and `01a114ac…` ran on AWS after the migration (same Coworker, wallets and registration). `01a114ac…` is the Task whose report was verified by PriceProof.
+- `01a1148a…` is listed for honesty: it was an earlier PriceProof test in which the sub-purchase held the model turn past the worker's turn limit; the worker retried the turn (each retry bought again) and the Task then missed its result deadline, so no result was submitted and nothing was paid out. The cause was fixed (turn limit covers the sub-purchase, identical purchases are reused by retries) and verified by the next Task.
+
+### PriceProof purchases made by ShillCheck (0.25 tUSDM each, paid from ShillCheck's purchasing wallet to PriceProof's own wallet)
+
+| PriceProof purchase (UTC start) | Escrow tx | Result tx | Collection tx (PriceProof) | PriceProof net |
+|---|---|---|---|---|
+| 2026-10-07 03:56:50 | [10083f6073f8…](https://preprod.cardanoscan.io/transaction/10083f6073f8ef727fa45f3ef23a5c4528d667467ba7f16591a7a1399a099aac) | [38625d4df71d…](https://preprod.cardanoscan.io/transaction/38625d4df71d0ffa95a7d4320ebde8ea74ee225f05426bf485107012b81cab71) | [a35b8b43bb64…](https://preprod.cardanoscan.io/transaction/a35b8b43bb642eed12f33789392f1764b9d76a6a05bd60fac178b0571c267ef7) | +0.25 tUSDM |
+| 2026-10-07 05:02:34 | [77730d90cccc…](https://preprod.cardanoscan.io/transaction/77730d90ccccc5d90d490d9e6d4026da159a71e0b410d79fae6b0e63fd425786) | [73c84c9b528f…](https://preprod.cardanoscan.io/transaction/73c84c9b528f8bc09b6381c6a2e6e821919da52511a2c649b68c42dacc421883) | [05a5ebcabe79…](https://preprod.cardanoscan.io/transaction/05a5ebcabe7956d11552c56eb9d8096f2c29ce15aedad3c5c04e0d978041c3db) | +0.25 tUSDM |
+
+Three further purchases (0.75 tUSDM in total) were made by the retries of the failed run above; they were all verified and paid out to PriceProof's wallet, and are not listed because their journals were written to a temporary directory (the bug fixed together with the retry problem). Both wallets belong to the same project.
+
 ## Evidence (Cardano Preprod, verified paid Task)
 
 | Item | Value |
