@@ -39,7 +39,7 @@ const message=(id,text)=>({id,type:'message',role:'assistant',status:'completed'
 // OpenAI-Responses compatible endpoint that Sokosumi Core calls for Coworker chat: POST {baseURL}/responses (SSE) and
 // GET {baseURL}/responses/{id}. Core sends no credential, so the base URL carries a secret path segment, and every
 // request is rate limited. `brain` is injected: (conversationKey, text, ctx) => Promise<string>.
-export function createChatServer({secret,brain,limiter=createRateLimiter(),now=Date.now,log=console,brainTimeoutMs=BRAIN_TIMEOUT_MS,keepaliveMs=KEEPALIVE_MS,maxConcurrent=4}){
+export function createChatServer({secret,brain,statusProvider,limiter=createRateLimiter(),now=Date.now,log=console,brainTimeoutMs=BRAIN_TIMEOUT_MS,keepaliveMs=KEEPALIVE_MS,maxConcurrent=4}){
  if(!secret||secret.length<24)throw new Error('CHAT_PATH_SECRET must be at least 24 characters');
  const responses=new Map(),conversations=new Map();
  let active=0;
@@ -63,6 +63,7 @@ export function createChatServer({secret,brain,limiter=createRateLimiter(),now=D
    const [head,tail]=[url.pathname.slice(0,prefix.length),url.pathname.slice(prefix.length)];
    if(!url.pathname.startsWith('/c/')||!sameSecret(head,prefix)||(tail!==''&&!tail.startsWith('/')))return json(res,404,{error:'not found'});
    if(req.method==='GET'&&tail==='/health')return json(res,200,{status:'ok'});
+   if(req.method==='GET'&&tail==='/status'&&statusProvider){const s=statusProvider();return s?json(res,200,s):json(res,404,{error:'no status yet'})}
    const get=tail.match(/^\/responses\/([A-Za-z0-9_-]{1,80})$/);
    if(req.method==='GET'&&get){
     const rec=responses.get(get[1]);

@@ -216,6 +216,14 @@ test('keepalive comments flow while the brain works',async()=>{
  const s=await start({brain:async()=>{await new Promise(r=>setTimeout(r,120));return 'ok'}});
  try{const {text}=await events(await post(s.base,{input:input('hi'),stream:true}));assert.match(text,/: keepalive/)}finally{s.close()}
 });
+test('status endpoint serves the health summary only on the secret path',async()=>{
+ const s=await start({opts:{statusProvider:()=>({overall:'ok',checks:{}})}});
+ try{
+  assert.equal((await (await fetch(`${s.base}/status`)).json()).overall,'ok');
+  assert.equal((await fetch(`${s.base.replace(SECRET,'x'.repeat(32))}/status`)).status,404);
+ }finally{s.close()}
+ const none=await start();try{assert.equal((await fetch(`${none.base}/status`)).status,404)}finally{none.close()}
+});
 test('server refuses a short secret',()=>{assert.throws(()=>createChatServer({secret:'short',brain:async()=>''}),/at least 24/)});
 // ---- eve brain ---------------------------------------------------------------------------------------
 function fakeEve(answer=(text)=>`reply to ${text}`){

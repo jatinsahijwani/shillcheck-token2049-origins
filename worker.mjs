@@ -24,7 +24,9 @@ async function listTasks(){
 await client.health();
 const paid=await createPaidAdapter({answer,save:async(taskId,state)=>writeFileSync(`.local/${taskId}.json`,JSON.stringify(state),{mode:0o600})});
 console.log('Continuous worker running',process.pid,'paid tasks enabled:',process.env.PAID_TASKS_ENABLED==='true');
+const beat=()=>{try{writeFileSync('.local/worker.heartbeat',String(Date.now()),{mode:0o600})}catch{}};
 while(true){
+ beat();
  try{
  const tasks=await listTasks();
  for(const t of tasks.filter(t=>t.coworkerId===id)){
