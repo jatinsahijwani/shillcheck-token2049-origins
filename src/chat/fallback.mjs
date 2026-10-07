@@ -9,7 +9,8 @@ export async function chatFallback(text,{env=process.env,sessionId='fallback'}={
  if(!handles.length)return HELP;
  if(handles.length>1){
   const budget=/\$\s*([\d,.]+)\s*([km])?/i.exec(text);
-  const plan=planTask({handles,budget_usd:budget?Number(budget[1].replace(/,/g,''))*({k:1e3,m:1e6}[(budget[2]||'').toLowerCase()]??1):undefined},{env});
+  const region=/\b(asia|europe|latam|africa|mena|oceania|north america|usa)\b/i.exec(text)?.[1];
+  const plan=planTask({handles,region,budget_usd:budget?Number(budget[1].replace(/,/g,''))*({k:1e3,m:1e6}[(budget[2]||'').toLowerCase()]??1):undefined},{env});
   return `Here is the Task text:\n\n\`\`\`\n${plan.task_text}\n\`\`\`\n\n${plan.how_to.map((s,i)=>`${i+1}. ${s}`).join('\n')}\n\nCached (instant): ${plan.cached_handles.map(h=>'@'+h).join(', ')||'none'}. ${plan.uncached_handles.length?`Needs a live X read: ${plan.uncached_handles.map(h=>'@'+h).join(', ')}.`:''}`;
  }
  const fee=/\$\s*([\d,.]+)\s*([km])?/i.exec(text);
