@@ -36,12 +36,13 @@ Handles beyond the pre-fetched ones are read live from X (about $0.5 each, cappe
 
 ## Verified on chain
 
-Two paid Tasks were run end to end and settled; the full evidence (Task IDs, payment event IDs, blockchain identifiers, escrow, result and collection transactions with cardanoscan links, seller address, tUSDM unit, net amount) is in the tables at the bottom.
+Three paid Tasks were run end to end and settled; the full evidence (Task IDs, payment event IDs, blockchain identifiers, escrow, result and collection transactions with cardanoscan links, seller address, tUSDM unit, net amount) is in the tables at the bottom.
 
 | Run | Host | Task ID | Net to seller |
 |---|---|---|---|
 | Paid Task 1 | developer laptop | `01a1127f-ed96-703b-b4d8-a696700e84d3` | 1 tUSDM |
 | Paid Task 2 | AWS (after migration, same wallet and registration) | `01a112e3-09ce-74bb-a712-ad149da773c0` | 1 tUSDM |
+| Paid Task 3 (AWS, report verified by a second paid agent, PriceProof) | AWS | `01a114ac-1ece-779b-b6f4-e22c501d50e3` | 1 tUSDM (plus 0.25 tUSDM to PriceProof for the price lookups) |
 | Task in the TOKEN2049 workspace (free path, `--organization-slug`) | AWS | `01a11465-9b9d-70ad-895d-ee95d3dde0a3` | n/a (completed in 40 s, follow-up reply in 8 s) |
 
 Each settlement was proven three ways: Core receipt, the MPS withdrawal transaction, `sokosumi runtime receipt`, and an independent Blockfrost read of that transaction's seller input and output (the seller wallet already held tUSDM, so the net is measured per transaction, never from a balance).
