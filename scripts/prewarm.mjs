@@ -7,7 +7,7 @@ import {createMockFetch} from '../src/mock-fetch.mjs';
 import {normalizeHandle,ttlFromEnv} from '../src/x-client.mjs';
 import {createCache} from '../src/cache.mjs';
 import {cacheDir,dataDir,isMock} from '../src/config.mjs';
-export const DEFAULT_HANDLES=['cobie','0xngmi','blknoiz06','CryptoHayes','inversebrah','HsakaTrades','CryptoKaleo','TheCryptoLark','IvanOnTech','MMCrypto','CryptoWendyO','AltcoinGordon','DegenSpartan','VitalikButerin','cz_binance'];
+export const DEFAULT_HANDLES=['cobie','0xngmi','blknoiz06','CryptoHayes','inversebrah','HsakaTrades','CryptoKaleo','TheCryptoLark','IvanOnTech','MMCrypto','CryptoWendyO','scottmelker','DegenSpartan','VitalikButerin','cz_binance'];
 // Worst case per uncached handle: user $0.01 + 100 posts $0.50 + up to 3 reply searches of 25 posts $0.375. Typical $0.5 to $0.9.
 export const EST_LOW=0.51,EST_HIGH=0.885;
 export function isCached(cache,handle,ttl){
